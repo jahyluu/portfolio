@@ -1,0 +1,61 @@
+/* palette from the ref, not final */
+:root {
+  color-scheme: dark;
+  --night: #0d1220;
+  --cream: #f3e6d3;
+  --amber: #e0a35c;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--night);
+  color: var(--cream);
+  overflow: hidden; /* no scroll until the camera path lands */
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+}
+
+.hero {
+  position: fixed;
+  top: 32px;
+  left: 32px;
+  pointer-events: none;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.hero p {
+  margin: 4px 0 0;
+  opacity: 0.75;
+}
+
+.dev-hint {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.5);
+  font-size: 12px;
+}
