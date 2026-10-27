@@ -17,7 +17,8 @@ const SHELF = { xFrom: 0.6, xTo: 4.2, boards: [1.22, 1.52, 1.82, 2.12], depth: 0
 // bottles up top, a bit wider than the cup shelves
 const BOTTLE_SHELF = { xFrom: 0.2, xTo: 4.6, y: 2.32, depth: 0.22 }
 // left of the shelves, over the grinder and cup stacks
-const MENU = { x: -0.6, y: 1.65, width: 1.5, height: 0.8 }
+// left of the shelves, over the self-serve station. x = center
+const MENU = { x: -0.225, y: 1.65, width: 0.75, height: 0.8 }
 // potted vines on the bottle shelf, trailing down
 const VINES = [
   { x: 0.3, length: 0.75 },
@@ -404,43 +405,47 @@ function MenuBoard() {
   const { x, y, width, height } = MENU
   const lines = useMemo(() => layOutMenuLines(), [])
   return (
-    <group>
-      <Box position={[x, y, WALL + 0.05]} size={[width + 0.08, height + 0.08, 0.04]} color={COLOR.beam} />
-      <Box position={[x, y, WALL + 0.072]} size={[width, height, 0.006]} color={COLOR.menuBoard} castShadow={false} />
-      <Text
-        position={[x, y + height / 2 - 0.1, WALL + 0.077]}
-        fontSize={0.09}
-        letterSpacing={0.25}
-        color={COLOR.chalk}
-        anchorX="center"
-        anchorY="middle"
-      >
+    // everything inside is placed relative to the board's center
+    <group position={[x, y, WALL]}>
+      <Box position={[0, 0, 0.05]} size={[width + 0.08, height + 0.08, 0.04]} color={COLOR.beam} />
+      <Box position={[0, 0, 0.072]} size={[width, height, 0.006]} color={COLOR.menuBoard} castShadow={false} />
+      <Text position={[0, height / 2 - 0.1, 0.077]} fontSize={0.09} letterSpacing={0.25} color={COLOR.chalk} anchorX="center" anchorY="middle">
         MENU
       </Text>
-      {/* chalk "writing" under the title: one unit-long line, stretched per line */}
-      <Instances limit={lines.length}>
-        <boxGeometry args={[1, 0.014, 0.002]} />
-        <meshStandardMaterial color={COLOR.chalk} roughness={1} />
-        {lines.map((line, i) => (
-          <Instance key={i} position={[line.x, line.y, WALL + 0.076]} scale={[line.length, 1, 1]} />
-        ))}
-      </Instances>
+      {/* chalk "writing" under the title. unlit, like chalk on a board, so the room
+          lighting can't darken it into the board */}
+      {lines.map((line, i) => (
+        <mesh key={i} position={[line.x, line.y, 0.078]}>
+          <planeGeometry args={[line.length, 0.018 * line.thick]} />
+          <meshBasicMaterial color={COLOR.chalk} />
+        </mesh>
+      ))}
     </group>
   )
 }
 
-// unreadable on purpose: two columns of item lines under the MENU title
+// unreadable on purpose: a rule under the MENU title, then two sections, each with a
+// short heading and a list of items, a dotted price at the right of every item.
+// (relative to the board's center)
 function layOutMenuLines() {
-  const { x, y, width, height } = MENU
-  const top = y + height / 2 - 0.1
-  const lines: { x: number; y: number; length: number }[] = []
-  const columns = [x - width / 2 + 0.08, x + 0.05]
-  columns.forEach((left, c) => {
-    for (let row = 0; row < 7; row++) {
-      const length = Math.min(0.22 + seeded(c * 10 + row) * 0.38, width / 2 - 0.13)
-      lines.push({ x: left + length / 2, y: top - 0.12 - row * 0.085, length })
+  const { width, height } = MENU
+  const left = -width / 2 + 0.07
+  const right = width / 2 - 0.07
+  const lines: { x: number; y: number; length: number; thick: number }[] = []
+  const line = (from: number, to: number, y: number, thick = 1) => lines.push({ x: (from + to) / 2, y, length: to - from, thick })
+
+  let y = height / 2 - 0.17
+  line(-0.18, 0.18, y) // rule under the title
+  let n = 0
+  for (const items of [5, 4]) {
+    y -= 0.065
+    line(left, left + 0.16, y, 1.6) // section heading
+    for (let k = 0; k < items; k++, n++) {
+      y -= 0.05
+      line(left, left + 0.18 + seeded(n + 30) * 0.2, y) // item
+      line(right - 0.06, right, y) // price
     }
-  })
+  }
   return lines
 }
 
