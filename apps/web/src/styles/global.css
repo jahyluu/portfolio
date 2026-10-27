@@ -21,7 +21,6 @@ body,
 body {
   background: var(--night);
   color: var(--cream);
-  overflow: hidden; /* no scroll until the camera path lands */
 }
 
 .scene {
@@ -34,6 +33,8 @@ body {
   top: 32px;
   left: 32px;
   pointer-events: none;
+  /* --scroll comes from scroll.ts. gone ~15% down */
+  opacity: clamp(0, calc(1 - var(--scroll, 0) * 7), 1);
 }
 
 .hero h1 {
@@ -48,11 +49,45 @@ body {
   opacity: 0.75;
 }
 
+/* page length. taller = slower camera */
+.scroll-track {
+  height: 500vh;
+}
+
+.scroll-cue {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: clamp(0, calc(1 - var(--scroll, 0) * 20), 0.7);
+  animation: bob 2s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, 6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue {
+    animation: none;
+    transform: translateX(-50%);
+  }
+}
+
 .dev-hint {
   position: fixed;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 16px;
+  right: 16px;
   margin: 0;
   padding: 6px 12px;
   border-radius: 999px;

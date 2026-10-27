@@ -11,6 +11,7 @@ import {
   MY_TABLE,
   PENDANT,
   ROOM,
+  SCREEN_SIZE,
   SHELVES,
   SOLO_SEAT,
   SOLO_TABLE,
@@ -217,11 +218,11 @@ function Laptop({ position, rotationY = 0 }: { position: Vec3; rotationY?: numbe
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
       <Box position={[0, 0.0075, 0]} size={[0.32, 0.015, 0.22]} color={COLOR.laptop} />
-      <group position={[0, 0.015, 0.11]} rotation={[0.26, 0, 0]}>
+      <group position={[0, 0.015, 0.11]} rotation={[LAPTOP.tilt, 0, 0]}>
         <Box position={[0, 0.105, 0]} size={[0.32, 0.21, 0.008]} color={COLOR.laptop} />
         {/* display, user-facing side */}
         <mesh position={[0, 0.105, -0.0045]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[0.3, 0.19]} />
+          <planeGeometry args={[SCREEN_SIZE.width, SCREEN_SIZE.height]} />
           <meshBasicMaterial color={COLOR.screen} />
         </mesh>
       </group>

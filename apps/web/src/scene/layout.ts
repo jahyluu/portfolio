@@ -24,7 +24,25 @@ export function faceToward(from: Vec3, to: Vec3): number {
 export const MY_TABLE = { position: [0, 0, 0] as Vec3, size: [1.2, 0.8] as [number, number] }
 // north side of the table, facing south (opening camera)
 export const ME = { position: [0, 0, -0.75] as Vec3, rotationY: 0 }
-export const LAPTOP = { position: [0, TABLE_HEIGHT, -0.1] as Vec3 }
+// tilt: lid lean-back in radians (~15deg)
+export const LAPTOP = { position: [0, TABLE_HEIGHT, -0.1] as Vec3, tilt: 0.26 }
+// glowing part of the lid, meters
+export const SCREEN_SIZE = { width: 0.3, height: 0.19 }
+
+// my display in world space: center + the way it faces (toward me, tilted up).
+// mirrors Laptop() in CafeBlockout: hinge 0.11 behind center, display 0.105 up the lid
+export const MY_SCREEN = (() => {
+  const [x, y, z] = LAPTOP.position
+  const cos = Math.cos(LAPTOP.tilt)
+  const sin = Math.sin(LAPTOP.tilt)
+  const hinge: Vec3 = [x, y + 0.015, z + 0.11]
+  const up = 0.105
+  const front = -0.0045
+  return {
+    center: [hinge[0], hinge[1] + up * cos - front * sin, hinge[2] + up * sin + front * cos] as Vec3,
+    normal: [0, sin, -cos] as Vec3,
+  }
+})()
 export const PENDANT = { position: [0, 2.45, 0] as Vec3 }
 
 // --- other tables
@@ -48,14 +66,16 @@ export const WINDOW = { zFrom: -3.65, zTo: 3.6, yFrom: 0.9, yTo: 2.6 }
 // south wall
 export const DOOR = { xFrom: 2.2, xTo: 3.7, height: 2.2 }
 
-// --- camera beats
-// beat 1 is the opening shot. 2-5 are rough, tune when we do the scroll path
-export type CameraBeat = { name: string; position: Vec3; target: Vec3 }
-
-export const CAMERA_BEATS: CameraBeat[] = [
-  { name: 'High corner', position: [-5.4, 2.9, 3.4], target: [0, 0.8, -0.3] },
-  { name: 'Spiral down', position: [-4.6, 2.2, -0.1], target: [0, 0.8, -0.3] },
-  { name: 'Over the shoulder', position: [-0.55, 1.5, -1.6], target: [0, 0.86, 0.03] },
-  { name: 'Push in', position: [-0.2, 1.05, -0.95], target: [0, 0.86, 0.03] },
-  { name: 'Handoff', position: [0, 0.88, -0.32], target: [0, 0.86, 0.03] },
-]
+// --- camera path
+// one continuous spiral from the corner down into my laptop screen. no keyframes,
+// so there are no joints for the path to turn at. angle, distance and height all
+// ease toward the screen together and slow down as they land.
+// turnEase / dropEase: how early the camera gets around behind me / down to
+// shoulder height. higher = earlier, but too high grazes my head.
+// 1.8 / 2.2 clears my head by ~15cm and my shoulder by ~10cm
+export const CAMERA_PATH = {
+  start: [-5.4, 2.9, 3.4] as Vec3, // high corner
+  startTarget: [0, 0.8, -0.3] as Vec3, // my table
+  turnEase: 1.8,
+  dropEase: 2.2,
+}
