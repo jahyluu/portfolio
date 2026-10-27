@@ -1,9 +1,11 @@
+import { Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { BackWall } from './BackWall'
 import { Bar } from './Bar'
 import { CafeBlockout } from './CafeBlockout'
 import { CameraRig } from './CameraRig'
 import { Lighting } from './Lighting'
+import { Outside } from './Outside'
 import { Paintings } from './Paintings'
 import { COLOR } from './palette'
 import { PostEffects } from './PostEffects'
@@ -22,12 +24,15 @@ export function Experience() {
         <CameraRig />
         <Lighting />
         <Room />
+        <Outside />
         <Bar />
         <BackWall />
         <CafeBlockout />
         <Tabletops />
         <Paintings />
         <PostEffects />
+        {/* dev only: frames per second, top left. click it to cycle ms per frame / memory */}
+        {import.meta.env.DEV && <Stats />}
       </Canvas>
     </div>
   )
