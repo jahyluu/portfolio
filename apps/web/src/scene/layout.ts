@@ -66,16 +66,56 @@ export const WINDOW = { zFrom: -3.65, zTo: 3.6, yFrom: 0.9, yTo: 2.6 }
 // south wall
 export const DOOR = { xFrom: 2.2, xTo: 3.7, height: 2.2 }
 
+// --- room finish
+// dark wood paneling on every wall. window sits right on top of it
+export const WAINSCOT_HEIGHT = 0.9
+
+// grid of dark beams hanging below the ceiling, the gaps are the recessed panels.
+// beamsX run north-south at these x, beamsZ run east-west at these z.
+// kept clear of my pendant at (0, 0)
+export const CEILING = {
+  beamDepth: 0.22,
+  beamWidth: 0.18,
+  beamsX: [-3.6, -1.2, 1.2, 3.6],
+  beamsZ: [-1.6, 1.6],
+}
+
+// --- downlights
+// recessed ceiling lights, each throws a warm pool straight down.
+// kept off the beams. shadows are expensive so only the table ones cast them
+export type Downlight = { position: Vec3; intensity: number; shadows?: boolean }
+
+const LIGHT_Y = ROOM.height - 0.02
+
+export const DOWNLIGHTS: Downlight[] = [
+  { position: [3.2, LIGHT_Y, -2.0], intensity: 7, shadows: true }, // group table
+  { position: [3.35, LIGHT_Y, 1.95], intensity: 6, shadows: true }, // solo worker
+  { position: [1.8, LIGHT_Y, -3.9], intensity: 6 }, // bar
+  { position: [3.0, LIGHT_Y, -3.9], intensity: 6 }, // bar
+  { position: [4.3, LIGHT_Y, -3.9], intensity: 6 }, // bar
+  { position: [5.4, LIGHT_Y, -3.9], intensity: 6 }, // bar
+  { position: [-4.9, LIGHT_Y, 1.0], intensity: 4 }, // window bench
+  { position: [5.5, LIGHT_Y, 0.2], intensity: 4 }, // paintings wall
+  { position: [2.95, LIGHT_Y, 3.9], intensity: 3 }, // entrance
+]
+
 // --- camera path
 // one continuous spiral from the corner down into my laptop screen. no keyframes,
 // so there are no joints for the path to turn at. angle, distance and height all
 // ease toward the screen together and slow down as they land.
 // turnEase / dropEase: how early the camera gets around behind me / down to
 // shoulder height. higher = earlier, but too high grazes my head.
-// 1.8 / 2.2 clears my head by ~15cm and my shoulder by ~10cm
+// 2.0 / 2.2 clears my head by ~14cm and my shoulder by ~10cm
 export const CAMERA_PATH = {
-  start: [-5.4, 2.9, 3.4] as Vec3, // high corner
-  startTarget: [0, 0.8, -0.3] as Vec3, // my table
-  turnEase: 1.8,
+  // high in the southwest corner, 3/4 view of the back of my laptop.
+  // closer = I'm bigger in frame
+  start: [-3.86, 2.75, 2.54] as Vec3,
+  // centered on my laptop (where the zoom ends up), aimed a bit above it
+  // so the frame isn't half floor
+  startTarget: [0, 1.07, 0.03] as Vec3,
+  // aims the opening shot this many meters to the right of my table, which slides
+  // the north wall out the left edge. 0 = table centered. eases back as you scroll
+  startPan: 0,
+  turnEase: 2.0,
   dropEase: 2.2,
 }

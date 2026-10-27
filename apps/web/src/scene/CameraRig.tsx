@@ -54,7 +54,7 @@ function toVector([x, y, z]: Vec3) {
 // returns a fn that fills in camera position + look-at point for t = 0-1
 function makeSpiral(end: Vec3) {
   const [cx, , cz] = MY_SCREEN.center
-  const { start, startTarget, turnEase, dropEase } = CAMERA_PATH
+  const { start, startTarget, startPan, turnEase, dropEase } = CAMERA_PATH
 
   const startAngle = Math.atan2(start[0] - cx, start[2] - cz)
   let endAngle = Math.atan2(end[0] - cx, end[2] - cz)
@@ -63,7 +63,10 @@ function makeSpiral(end: Vec3) {
 
   const startRadius = Math.hypot(start[0] - cx, start[2] - cz)
   const endRadius = Math.hypot(end[0] - cx, end[2] - cz)
-  const lookFrom = toVector(startTarget)
+  // opening look-at point, nudged sideways by startPan (to the camera's right)
+  const forward = new Vector3(startTarget[0] - start[0], 0, startTarget[2] - start[2]).normalize()
+  const right = new Vector3(-forward.z, 0, forward.x)
+  const lookFrom = toVector(startTarget).addScaledVector(right, startPan)
   const lookTo = toVector(MY_SCREEN.center)
 
   return (t: number, position: Vector3, target: Vector3) => {
