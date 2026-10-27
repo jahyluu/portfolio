@@ -12,10 +12,14 @@ export function Room() {
       <Walls />
       <Ceiling />
       <Window />
+      <WindowFrame />
       <Door />
     </group>
   )
 }
+
+// storefront window: thick posts split it into big bays, low wood panel at the base
+const WINDOW_GRID = { bays: 4, knee: 0.45, post: 0.1, depth: 0.08 }
 
 const PLANK_WIDTH = 0.16
 const PLANK_LENGTH = 1.2
@@ -135,14 +139,15 @@ function Ceiling() {
   )
 }
 
-// placeholder night until the window commit (clear glass, street, rain)
+// placeholder night until the window commit (clear glass, street, rain). east wall
 function Window() {
   const width = WINDOW.zTo - WINDOW.zFrom
   const height = WINDOW.yTo - WINDOW.yFrom
   return (
     <mesh
-      position={[BOUNDS.minX + 0.01, WINDOW.yFrom + height / 2, WINDOW.zFrom + width / 2]}
-      rotation={[0, Math.PI / 2, 0]}
+      // sits just in front of the wall paneling until the window commit cuts a real opening
+      position={[BOUNDS.maxX - 0.04, WINDOW.yFrom + height / 2, WINDOW.zFrom + width / 2]}
+      rotation={[0, -Math.PI / 2, 0]}
     >
       <planeGeometry args={[width, height]} />
       <meshBasicMaterial color={COLOR.night} />
@@ -150,14 +155,54 @@ function Window() {
   )
 }
 
-function Door() {
-  const width = DOOR.xTo - DOOR.xFrom
+function WindowFrame() {
+  const { zFrom, zTo, yTo } = WINDOW
+  const { bays, knee, post, depth } = WINDOW_GRID
+  const x = BOUNDS.maxX - 0.05 - depth / 2
+  const width = zTo - zFrom
+  const zMid = (zFrom + zTo) / 2
+  const bayWidth = width / bays
+  const glassHeight = yTo - knee
+  const glassMid = knee + glassHeight / 2
   return (
-    <Box
-      position={[DOOR.xFrom + width / 2, DOOR.height / 2, BOUNDS.maxZ - 0.03]}
-      size={[width, DOOR.height, 0.06]}
-      color={COLOR.door}
-      castShadow={false}
-    />
+    <group>
+      {/* knee panel + sill */}
+      <Box position={[x, knee / 2, zMid]} size={[depth, knee, width]} color={COLOR.wainscot} castShadow={false} />
+      <Box position={[x - 0.02, knee, zMid]} size={[depth + 0.04, 0.05, width + 0.04]} color={COLOR.windowFrame} castShadow={false} />
+      {/* head rail along the top */}
+      <Box position={[x, yTo - post / 2, zMid]} size={[depth, post, width]} color={COLOR.windowFrame} castShadow={false} />
+      {/* thick posts between bays, including both ends */}
+      {Array.from({ length: bays + 1 }, (_, b) => (
+        <Box key={`post${b}`} position={[x, glassMid, zFrom + b * bayWidth]} size={[depth, glassHeight, post]} color={COLOR.windowFrame} castShadow={false} />
+      ))}
+    </group>
+  )
+}
+
+// glass door in a warm wood frame: one big pane, narrow stiles on the sides,
+// a deeper rail at the bottom. faces into the room (-z)
+const DOOR_GLASS = { side: 0.1, top: 0.12, bottom: 0.2 }
+
+function Door() {
+  const { xFrom, xTo, height } = DOOR
+  const { side, top, bottom } = DOOR_GLASS
+  const width = xTo - xFrom
+  const x = xFrom + width / 2
+  const z = BOUNDS.maxZ - 0.03
+  const face = z - 0.031 // just in front of the door
+  const glassWidth = width - side * 2
+  const glassHeight = height - top - bottom
+  return (
+    <group>
+      {/* the wood frame is the door itself; the glass covers its middle */}
+      <Box position={[x, height / 2, z]} size={[width, height, 0.06]} color={COLOR.windowFrame} castShadow={false} />
+      {/* night outside, until the window commit gives it real glass */}
+      <mesh position={[x, bottom + glassHeight / 2, face]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[glassWidth, glassHeight]} />
+        <meshBasicMaterial color={COLOR.night} />
+      </mesh>
+      {/* thin vertical pull handle on the stile */}
+      <Box position={[xTo - side / 2, 1.0, face - 0.03]} size={[0.025, 0.25, 0.025]} color={COLOR.brass} />
+    </group>
   )
 }

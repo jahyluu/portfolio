@@ -1,10 +1,14 @@
 import { Canvas } from '@react-three/fiber'
+import { BackWall } from './BackWall'
+import { Bar } from './Bar'
 import { CafeBlockout } from './CafeBlockout'
 import { CameraRig } from './CameraRig'
 import { Lighting } from './Lighting'
+import { Paintings } from './Paintings'
 import { COLOR } from './palette'
 import { PostEffects } from './PostEffects'
 import { Room } from './Room'
+import { Tabletops } from './Tabletop'
 
 // r3f canvas, sits behind the overlay.
 // flat = no tone mapping on the renderer, PostEffects does it instead
@@ -18,7 +22,11 @@ export function Experience() {
         <CameraRig />
         <Lighting />
         <Room />
+        <Bar />
+        <BackWall />
         <CafeBlockout />
+        <Tabletops />
+        <Paintings />
         <PostEffects />
       </Canvas>
     </div>

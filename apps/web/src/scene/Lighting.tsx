@@ -1,10 +1,10 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { SpotLight } from 'three'
-import { DOWNLIGHTS, MY_SCREEN, PENDANT, SOLO_TABLE, TABLE_HEIGHT, type Vec3 } from './layout'
+import { DOWNLIGHTS, MY_SCREEN, PENDANT, type Vec3 } from './layout'
 import { COLOR } from './palette'
 
 // one knob for the whole room. raise it if everything reads too dark on your screen
-const BRIGHTNESS = 1
+export const BRIGHTNESS = 1
 
 // soft late-afternoon feel: a warm, even base so nothing is murky, with gentle
 // pools on top. my pendant is still the brightest spot, the window the only cool light
@@ -27,10 +27,10 @@ export function Lighting() {
         <Spot key={i} position={light.position} intensity={light.intensity * 1.4} shadows={light.shadows} />
       ))}
 
-      {/* night coming in through the window */}
-      <directionalLight position={[-10, 4, 1]} color={COLOR.nightLight} intensity={0.25 * BRIGHTNESS} />
+      {/* night coming in through the window (east wall) */}
+      <directionalLight position={[10, 4, 0.3]} color={COLOR.nightLight} intensity={0.25 * BRIGHTNESS} />
 
-      {/* screen glow on my face, and on the solo worker's */}
+      {/* screen glow on my face */}
       <pointLight
         position={[sx + nx * 0.12, sy + ny * 0.12, sz + nz * 0.12]}
         color={COLOR.screen}
@@ -38,21 +38,14 @@ export function Lighting() {
         distance={1.2}
         decay={2}
       />
-      <pointLight
-        position={[SOLO_TABLE.position[0], TABLE_HEIGHT + 0.2, SOLO_TABLE.position[2] + 0.25]}
-        color={COLOR.screen}
-        intensity={0.5 * BRIGHTNESS}
-        distance={1.2}
-        decay={2}
-      />
     </>
   )
 }
 
-type SpotProps = { position: Vec3; intensity: number; angle?: number; shadows?: boolean }
+type SpotProps = { position: Vec3; intensity: number; angle?: number; penumbra?: number; shadows?: boolean }
 
 // warm cone pointing straight down. fully soft edge so pools blend into the room
-function Spot({ position, intensity, angle = 0.8, shadows = false }: SpotProps) {
+export function Spot({ position, intensity, angle = 0.8, penumbra = 1, shadows = false }: SpotProps) {
   const light = useRef<SpotLight>(null!)
   const [x, , z] = position
 
@@ -69,7 +62,7 @@ function Spot({ position, intensity, angle = 0.8, shadows = false }: SpotProps) 
       color={COLOR.warmLight}
       intensity={intensity * BRIGHTNESS}
       angle={angle}
-      penumbra={1}
+      penumbra={penumbra}
       distance={8}
       decay={2}
       castShadow={shadows}
