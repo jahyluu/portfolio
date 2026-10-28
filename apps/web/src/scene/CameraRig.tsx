@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
+import { updateHandoff, type ScreenRegion } from '../handoff'
 import { scroll, scrollToProgress } from '../scroll'
-import { CAMERA_PATH, MY_SCREEN, SCREEN_SIZE, type Vec3 } from './layout'
+import { CAMERA_PATH, LAPTOP, MY_SCREEN, SCREEN_SIZE, type Vec3 } from './layout'
 
 // lower = floatier
 const SMOOTHING = 5
@@ -23,6 +24,9 @@ export function CameraRig() {
     [camera.fov, width, height],
   )
 
+  // the part of my screen that ends up filling the window, where the desktop gets drawn
+  const region = useMemo(() => screenRegion(width / height), [width, height])
+
   const position = useMemo(() => new Vector3(), [])
   const target = useMemo(() => new Vector3(), [])
 
@@ -31,6 +35,8 @@ export function CameraRig() {
     spiral(smoothed.current, position, target)
     camera.position.copy(position)
     camera.lookAt(target)
+    camera.updateMatrixWorld()
+    updateHandoff(smoothed.current, camera, region, { width, height })
   })
 
   useEffect(() => {
@@ -80,11 +86,29 @@ function makeSpiral(end: Vec3) {
   }
 }
 
-// distance where the screen fills the viewport.
-// wide viewports are limited by screen width, tall ones by height
+// how much of the screen is in view at the end, in meters. same shape as the window.
+// wide windows are limited by the screen's width, tall ones by its height
+function visibleHeight(aspect: number) {
+  return Math.min(SCREEN_SIZE.height, SCREEN_SIZE.width / aspect) * FILL
+}
+
+function screenRegion(aspect: number): ScreenRegion {
+  const height = visibleHeight(aspect)
+  return {
+    center: toVector(MY_SCREEN.center),
+    // facing the screen you look along +z, so its right is -x
+    right: new Vector3(-1, 0, 0),
+    up: new Vector3(0, Math.cos(LAPTOP.tilt), Math.sin(LAPTOP.tilt)),
+    normal: toVector(MY_SCREEN.normal),
+    width: height * aspect,
+    height,
+  }
+}
+
+// distance where the screen fills the viewport
 function fullScreenPosition(fovDegrees: number, aspect: number): Vec3 {
-  const visibleHeight = Math.min(SCREEN_SIZE.height, SCREEN_SIZE.width / aspect) * FILL
-  const distance = visibleHeight / (2 * Math.tan(MathUtils.degToRad(fovDegrees) / 2))
+  const visible = visibleHeight(aspect)
+  const distance = visible / (2 * Math.tan(MathUtils.degToRad(fovDegrees) / 2))
   const [cx, cy, cz] = MY_SCREEN.center
   const [nx, ny, nz] = MY_SCREEN.normal
   return [cx + nx * distance, cy + ny * distance, cz + nz * distance]

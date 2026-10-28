@@ -1,0 +1,576 @@
+.desktop {
+  --glass: rgb(28 22 40 / 0.55);
+  --window: rgb(30 26 38 / 0.92);
+  --window-border: rgb(255 255 255 / 0.12);
+  --text: #f1edf7;
+  --muted: rgb(241 237 247 / 0.6);
+  --accent: #b48cff;
+  --select: rgb(160 120 255 / 0.45);
+
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  background: #2a1d3d;
+  user-select: none;
+  /* so the wallpaper can size itself off the desktop, not the window */
+  container-type: size;
+  /* warped onto the laptop screen by handoff.ts until you're all the way in */
+  transform-origin: 0 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* dims it from far away (--dim from handoff.ts) */
+.desktop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1000000;
+  background: #000;
+  opacity: var(--dim, 0);
+  pointer-events: none;
+}
+
+.desktop-active .desktop {
+  pointer-events: auto;
+}
+
+/* wallpaper: as small as it can be while still covering the screen, then shifted toward
+   Kindred (--focus-x/y, 0-1 in the image) as far as the crop allows. the small copy shows
+   until the big one loads */
+.desktop::before {
+  --aspect: 2;
+  --focus-x: 0.44;
+  --focus-y: 0.4;
+  --h: max(100cqw / var(--aspect), 100cqh);
+  --w: calc(var(--h) * var(--aspect));
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/wallpaper.webp'), url('/wallpaper-small.webp');
+  background-repeat: no-repeat;
+  background-size: var(--w) var(--h);
+  background-position: clamp(100cqw - var(--w), 50cqw - var(--focus-x) * var(--w), 0px)
+    clamp(100cqh - var(--h), 50cqh - var(--focus-y) * var(--h), 0px);
+}
+
+/* low specificity so component styles win without !important */
+:where(.desktop) button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+
+/* menu bar */
+
+.menu-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 14px;
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  font-size: 13px;
+}
+
+.menu-mark {
+  display: flex;
+  color: var(--text);
+}
+
+.menu-item {
+  opacity: 0.9;
+}
+
+.menu-spacer {
+  flex: 1;
+}
+
+/* desktop icons */
+
+.desktop-icons {
+  position: absolute;
+  top: 44px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 92px;
+  padding: 6px 4px;
+  border-radius: 6px;
+}
+
+.desktop-icon span {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.8);
+}
+
+.desktop-icon.selected svg {
+  background: rgb(0 0 0 / 0.25);
+  border-radius: 6px;
+}
+
+.desktop-icon.selected span {
+  background: var(--select);
+  text-shadow: none;
+}
+
+.desktop-icon:focus-visible,
+.finder-item:focus-visible,
+.dock-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* windows */
+
+.window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--window);
+  border: 1px solid var(--window-border);
+  border-radius: 12px;
+  box-shadow:
+    0 22px 70px rgb(0 0 0 / 0.55),
+    0 0 0 0.5px rgb(0 0 0 / 0.6);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  animation: window-open 0.18s ease-out;
+}
+
+.window:not(.focused) {
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.4);
+}
+
+.window.maximized {
+  border-radius: 0;
+}
+
+@keyframes window-open {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.title-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: 36px;
+  padding: 0 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+  background: rgb(255 255 255 / 0.03);
+  touch-action: none;
+}
+
+.traffic-lights {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+}
+
+.light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.window .light {
+  background: rgb(255 255 255 / 0.18);
+}
+
+.window.focused .close,
+.traffic-lights:hover .close {
+  background: #ff5f57;
+}
+
+.window.focused .minimize,
+.traffic-lights:hover .minimize {
+  background: #febc2e;
+}
+
+.window.focused .zoom,
+.traffic-lights:hover .zoom {
+  background: #28c840;
+}
+
+.window-title {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.window.focused .window-title {
+  color: var(--text);
+}
+
+.window-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  /* scrolling a window shouldn't scroll the page behind it (that's how you leave the desktop) */
+  overscroll-behavior: contain;
+  user-select: text;
+}
+
+/* dock */
+
+.dock {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  z-index: 100000;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 6px 8px 4px;
+  transform: translateX(-50%);
+  background: var(--glass);
+  border: 1px solid var(--window-border);
+  border-radius: 20px;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+}
+
+.dock-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.15s ease;
+  transform-origin: bottom;
+}
+
+.dock-item:hover {
+  transform: scale(1.22) translateY(-4px);
+}
+
+.dock-item svg {
+  display: block;
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.35));
+}
+
+.dock-dot {
+  width: 4px;
+  height: 4px;
+  margin-top: 3px;
+  border-radius: 50%;
+}
+
+.dock-dot.on {
+  background: var(--text);
+}
+
+.dock-label {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgb(30 26 38 / 0.85);
+  border: 1px solid var(--window-border);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.82);
+  transition: opacity 0.12s;
+}
+
+.dock-item:hover .dock-label {
+  opacity: 1;
+}
+
+/* finder */
+
+.finder {
+  display: flex;
+  height: 100%;
+}
+
+.finder-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 160px;
+  padding: 10px 8px;
+  background: rgb(255 255 255 / 0.03);
+  border-right: 1px solid rgb(255 255 255 / 0.06);
+}
+
+.finder-heading {
+  margin: 4px 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.finder-place {
+  padding: 5px 8px;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.finder-place:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+
+.finder-place.active {
+  background: rgb(255 255 255 / 0.1);
+}
+
+.finder-main {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+}
+
+.finder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 112px);
+  gap: 8px;
+  padding: 16px;
+}
+
+.finder-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.finder-item span {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.finder-item.selected {
+  background: rgb(255 255 255 / 0.08);
+}
+
+.finder-item.selected span {
+  background: var(--select);
+}
+
+.finder-status {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
+  margin: 0;
+  padding: 6px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid rgb(255 255 255 / 0.06);
+}
+
+/* documents: project, about, stack, contact */
+
+.doc {
+  padding: 22px 26px 28px;
+  line-height: 1.55;
+  font-size: 14px;
+}
+
+.doc h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.doc h2 {
+  margin: 22px 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.doc section:first-child h2 {
+  margin-top: 0;
+}
+
+.doc p {
+  margin: 0 0 12px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.project-header,
+.about-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.project-header p,
+.about-header p {
+  margin: 2px 0 0;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c77dff, #5b8def);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.chips li {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  font-size: 12px;
+}
+
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 10px 0;
+  border-top: 1px solid rgb(255 255 255 / 0.07);
+}
+
+.timeline span:not(.muted) {
+  grid-column: 1;
+  color: var(--muted);
+}
+
+.timeline .muted {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.desktop .button {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 7px;
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  color: var(--text);
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.desktop .button:hover {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.desktop .button.primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: #1b1326;
+  font-weight: 600;
+}
+
+.contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.05);
+}
+
+.contact a:not(.button) {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* resume */
+
+.resume {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+}
+
+.resume iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .window {
+    animation: none;
+  }
+
+  .dock-item,
+  .dock-item:hover {
+    transition: none;
+    transform: none;
+  }
+}

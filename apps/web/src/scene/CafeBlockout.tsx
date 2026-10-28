@@ -57,7 +57,7 @@ export function CafeBlockout() {
       {/* my table */}
       <SquareTable position={MY_TABLE.position} size={MY_TABLE.size} />
       <Me />
-      <Laptop position={LAPTOP.position} />
+      <Laptop position={LAPTOP.position} mine />
       <StringLights />
 
       {/* poker */}
@@ -265,7 +265,8 @@ function WestTables() {
 }
 
 // faces +z
-type LaptopProps = { position: Vec3; rotationY?: number; sticker?: StickerKind }
+// mine: the desktop gets drawn over the screen (handoff.ts), so it's just the black border
+type LaptopProps = { position: Vec3; rotationY?: number; sticker?: StickerKind; mine?: boolean }
 
 // key widths in u, 15u per row. rows go from the hinge (+z) toward the user
 const KEY_ROWS: number[][] = [
@@ -319,7 +320,7 @@ const KEYBOARD = (() => {
 const KEY_MATERIAL = new MeshStandardMaterial({ color: '#2a2c31', roughness: 0.8, flatShading: true })
 
 // screen faces -z, hinged at the back
-function Laptop({ position, rotationY = 0, sticker }: LaptopProps) {
+function Laptop({ position, rotationY = 0, sticker, mine = false }: LaptopProps) {
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
       <Box position={[0, 0.0075, 0]} size={[0.32, 0.015, 0.22]} color={COLOR.laptop} />
@@ -331,7 +332,7 @@ function Laptop({ position, rotationY = 0, sticker }: LaptopProps) {
         {/* kept under the bloom threshold so the full-screen shot stays sharp */}
         <mesh position={[0, 0.105, -0.0045]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[SCREEN_SIZE.width, SCREEN_SIZE.height]} />
-          <meshBasicMaterial color={COLOR.screen} />
+          <meshBasicMaterial color={mine ? '#0b0a10' : COLOR.screen} />
         </mesh>
         {sticker && <LaptopSticker kind={sticker} position={[0, 0.105, -0.0055]} rotationY={Math.PI} onScreen />}
       </group>
