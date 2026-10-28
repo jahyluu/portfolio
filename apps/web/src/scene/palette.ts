@@ -1,6 +1,6 @@
 import { Color } from 'three'
 
-// dark wood, warm plaster, warm light. night through the window is the only cool bit
+// warm interior, the window is the only cool color
 export const COLOR = {
   // room
   floorBase: '#140c07',
@@ -10,14 +10,12 @@ export const COLOR = {
   plaster: '#a8937a',
   ceilingPanel: '#4a3322',
   beam: '#22160d',
-  door: '#2a1a10',
   windowFrame: '#7a4a26',
-  // furniture. light bamboo, so tables and the bar pop off the dark floor
+  // furniture (light bamboo to stand out from the dark floor)
   bamboo: '#d4b483',
   tableTop: '#d4b483',
   chair: '#3a2414',
   banquette: '#5c2e24', // oxblood leather
-  wood: '#4a2f1c',
   barBody: '#3a2415',
   slat: '#3b2616',
   slatAlt: '#33200f',
@@ -42,10 +40,10 @@ export const COLOR = {
   pastryDark: '#7a4a22',
   cookie: '#b9834a',
   paperCup: '#d8cbb5',
-  // people (greybox until real models land)
+  // people
   person: '#7d7f87',
   hoodie: '#1f1f23',
-  hoodieTrim: '#26262b', // pocket and collar, a shade off so their edges show
+  hoodieTrim: '#26262b', // pocket, slightly lighter so it shows
   // me
   skin: '#f1d2b8',
   skinShade: '#e2b99b',
@@ -59,10 +57,22 @@ export const COLOR = {
   drawstring: '#d6d6d6',
   backpack: '#2a2c31',
   backpackTrim: '#3a3d44',
+  // the barista
+  baristaShirt: '#2d3038',
+  baristaCuff: '#3c404a', // rolled sleeve
+  apron: '#8c6a48',
+  apronStrap: '#4a3a2c',
+  baristaPants: '#232429',
+  baristaSkin: '#e2b591',
+  baristaSkinShade: '#d1a27c',
+  baristaHair: '#2a1d14',
+  rag: '#d9d4c7',
+  busTub: '#5c6066',
   // tech
   laptop: '#b8bcc4',
   screen: '#9cc0ff',
   shade: '#1c1c1c',
+  wire: '#1d1a17', // string-light cord
   // light + air
   warmLight: '#ffc58a',
   skyFill: '#ffe2c2',
@@ -72,7 +82,7 @@ export const COLOR = {
   haze: '#2a1b10',
 }
 
-// past white so bloom actually catches it
+// > 1 so bloom picks it up
 function glow(hex: string, strength: number) {
   return new Color(hex).multiplyScalar(strength)
 }
@@ -80,7 +90,8 @@ function glow(hex: string, strength: number) {
 export const GLOW = {
   bulb: glow('#ffd9a8', 6),
   downlight: glow('#ffd9a8', 4),
-  // cup-shelf back panel. barely over white = a soft glow
+  // cup shelf backing, just over 1 for a faint glow
   shelfPanel: glow('#ffcf8a', 1.25),
   ledStrip: glow('#ffd9a8', 3),
+  stringBulb: glow('#ffc98a', 2.6),
 }

@@ -1,4 +1,4 @@
-/* palette from the ref, not final */
+/* placeholder colors */
 :root {
   color-scheme: dark;
   --night: #0d1220;
@@ -33,7 +33,7 @@ body {
   top: 32px;
   left: 32px;
   pointer-events: none;
-  /* --scroll comes from scroll.ts. gone ~15% down */
+  /* --scroll is set in scroll.ts, fully faded by ~15% */
   opacity: clamp(0, calc(1 - var(--scroll, 0) * 7), 1);
 }
 
@@ -49,7 +49,7 @@ body {
   opacity: 0.75;
 }
 
-/* page length. taller = slower camera */
+/* taller = slower camera */
 .scroll-track {
   height: 500vh;
 }

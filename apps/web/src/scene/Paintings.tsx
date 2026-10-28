@@ -4,21 +4,19 @@ import { BOUNDS, type Vec3 } from './layout'
 import { COLOR } from './palette'
 import { Box } from './primitives'
 
-// framed art on the walls
+// wall art
 
 export function Paintings() {
   return (
     <group>
-      {/* east wall, between the north wall and the window, above the end of the bar.
-          centered so the gap to the wall matches the gap to the window */}
+      {/* east wall above the end of the bar, centered between the corner and the window */}
       <PixelPainting pixels={MOUNTAIN} colors={INK_WASH} position={[BOUNDS.maxX - 0.03, 1.85, -3.575]} rotationY={-Math.PI / 2} />
     </group>
   )
 }
 
-// original ink-wash scene in pixels, 42 x 24: blossom branch sweeping in from the left,
-// red sun, snowy peak with brush streaks, fainter ridges behind, mist, still water.
-// one character per pixel, top row first. letters map to INK_WASH
+// 42x24 pixel art, ink-wash style: blossom branch, red sun, snowy peak, mist, water.
+// one char per pixel, top row first, colors in INK_WASH
 const MOUNTAIN = [
   ',.,......p..........p..p...,..............',
   'kkk.....pPp...p....pPppPp,.p.....,.RRR.,..',
@@ -48,18 +46,18 @@ const MOUNTAIN = [
 
 const INK_WASH: Record<string, string> = {
   '.': '#e8e0cc', // paper
-  ',': '#ddd4be', // paper grain
+  ',': '#ddd4be', // paper, darker
   k: '#2b2a2e', // branch ink
   p: '#d9667a', // blossoms
   P: '#b33a52',
   r: '#c23a2b', // sun
   R: '#a52e22',
   w: '#f3efe6', // snow
-  l: '#a9a8a9', // mountain, lit side
-  m: '#7d7c80', // mountain, shaded side
+  l: '#a9a8a9', // mountain light
+  m: '#7d7c80', // mountain shadow
   K: '#4a4a4f', // brush streaks
-  f: '#cfc8b8', // mist, distant hills
-  g: '#bdb7aa', // ink strokes on the water
+  f: '#cfc8b8', // mist / far hills
+  g: '#bdb7aa', // water strokes
 }
 
 // meters per pixel
@@ -67,8 +65,7 @@ const PIXEL_SIZE = 0.035
 
 type PixelPaintingProps = { pixels: string[]; colors: Record<string, string>; position: Vec3; rotationY: number }
 
-// the pixel grid becomes one small image, drawn with no smoothing so every pixel
-// stays a crisp square. drawn facing +z, then turned to face into the room
+// grid -> DataTexture with nearest filtering so pixels stay sharp. faces +z, rotate to place
 function PixelPainting({ pixels, colors, position, rotationY }: PixelPaintingProps) {
   const texture = useMemo(() => pixelTexture(pixels, colors), [pixels, colors])
   const width = pixels[0].length * PIXEL_SIZE
@@ -92,7 +89,7 @@ function pixelTexture(pixels: string[], colors: Record<string, string>) {
   pixels.forEach((row, r) => {
     ;[...row].forEach((key, c) => {
       const hex = parseInt((colors[key] ?? '#ff00ff').slice(1), 16)
-      // texture rows start at the bottom, the grid starts at the top
+      // flip, texture rows go bottom-up
       const i = ((height - 1 - r) * width + c) * 4
       data[i] = (hex >> 16) & 255
       data[i + 1] = (hex >> 8) & 255

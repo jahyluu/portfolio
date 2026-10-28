@@ -20,25 +20,24 @@ import {
 import { COLOR } from './palette'
 import { Cylinder, seeded } from './primitives'
 
-// small things on the tables: coffee (with steam on mine), pastries, the study
-// group's papers and notebooks. people, chairs and laptops are in CafeBlockout
+// tabletop props (cups, pastries, papers, cards). furniture + laptops are in CafeBlockout
 
 export function Tabletops() {
   const [mx, , mz] = MY_TABLE.position
   const wx = WINDOW_TABLE.x
   return (
     <group>
-      {/* my table. tart on my left; my coffee is in Me.tsx so I can pick it up */}
+      {/* my coffee lives in Me.tsx since it gets picked up */}
       <PastryPlate position={[mx + 0.36, TABLE_HEIGHT, mz - 0.12]} pastry="tart" />
 
-      {/* window booth: a cup in front of everyone sitting there, a shared pastry for the couple */}
+      {/* window booth */}
       {WINDOW_TABLES.flatMap(({ z, bench, chair }) => [
         bench && <CoffeeCup key={`b${z}`} position={[wx + 0.2, TABLE_HEIGHT, z + 0.2]} rotationY={Math.PI / 2} />,
         chair && <CoffeeCup key={`c${z}`} position={[wx - 0.2, TABLE_HEIGHT, z - 0.2]} rotationY={-Math.PI / 2} />,
       ])}
       <PastryPlate position={[wx, TABLE_HEIGHT, WINDOW_TABLES[0].z]} rotationY={0.8} />
 
-      {/* west wall: a book and a cup for the reader */}
+      {/* west wall reader */}
       {WEST_TABLES.filter(({ seats: [north] }) => north).map(({ position: [x, , z] }) => (
         <group key={z}>
           <CoffeeCup position={[x + 0.2, TABLE_HEIGHT, z - 0.12]} />
@@ -56,7 +55,7 @@ export function Tabletops() {
   )
 }
 
-// mug on a saucer, filled to just under the rim
+// mug + saucer
 export function CoffeeCup({ position, rotationY = 0, steam = false }: { position: Vec3; rotationY?: number; steam?: boolean }) {
   const cream = COLOR.ceramics[0]
   return (
@@ -73,9 +72,8 @@ export function CoffeeCup({ position, rotationY = 0, steam = false }: { position
   )
 }
 
-// mug handle: a ring that wraps a bit past halfway, so both ends curl back into the
-// cup wall instead of stopping flat against it. sticks out on the cup's +x side.
-// center = ring center from the cup's middle, wrap = extra angle past a half ring
+// partial torus on the +x side. wraps a little past half so the ends sink into the
+// cup wall. wrap = extra angle past 180deg
 const HANDLE = { radius: 0.022, tube: 0.006, center: 0.045, wrap: 0.75 }
 
 function MugHandle({ position: [x, y, z], color }: { position: Vec3; color: string }) {
@@ -90,15 +88,15 @@ function MugHandle({ position: [x, y, z], color }: { position: Vec3; color: stri
 
 const PUFFS = 7
 
-// soft puffs that rise, drift and fade on a loop, staggered so there's always some
+// looping steam puffs, staggered
 function Steam({ position }: { position: Vec3 }) {
   const puffs = useRef<Mesh[]>([])
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
     puffs.current.forEach((puff, i) => {
-      const life = (t * 0.35 + i / PUFFS) % 1 // 0 -> 1 over ~3s
-      const drift = 0.012 * (1 + life * 2) // sways wider as it rises
+      const life = (t * 0.35 + i / PUFFS) % 1 // ~3s cycle
+      const drift = 0.012 * (1 + life * 2)
       puff.position.set(Math.sin(t * 1.3 + i * 2.1) * drift, life * 0.22, Math.cos(t + i) * 0.008)
       puff.scale.setScalar(0.6 + life * 1.4)
       ;(puff.material as MeshBasicMaterial).opacity = Math.sin(life * Math.PI) * 0.22
@@ -133,7 +131,7 @@ function PastryPlate({ position, rotationY = 0, pastry = 'croissant' }: PastryPl
   )
 }
 
-// golden crust, custard, a ring of strawberries, kiwi slices and blueberries
+// fruit tart
 function FruitTart({ position }: { position: Vec3 }) {
   const crustTop = 0.022
   const top = crustTop + 0.004 // custard surface
@@ -142,7 +140,7 @@ function FruitTart({ position }: { position: Vec3 }) {
     <group position={position}>
       <Cylinder position={[0, crustTop / 2, 0]} radius={[0.058, 0.052]} height={crustTop} segments={14} color={COLOR.pastry} />
       <Cylinder position={[0, crustTop + 0.002, 0]} radius={0.05} height={0.004} segments={14} color="#f1dfb0" castShadow={false} />
-      {/* strawberry halves around the edge, tips pointing out */}
+      {/* strawberries */}
       {Array.from({ length: strawberries }, (_, i) => {
         const angle = (i / strawberries) * Math.PI * 2
         return (
@@ -157,10 +155,10 @@ function FruitTart({ position }: { position: Vec3 }) {
           </mesh>
         )
       })}
-      {/* kiwi slices in the middle */}
+      {/* kiwi */}
       <Cylinder position={[-0.01, top + 0.002, 0.005]} radius={0.014} height={0.004} segments={10} color="#7da83a" castShadow={false} />
       <Cylinder position={[0.012, top + 0.003, -0.008]} radius={0.014} height={0.004} segments={10} color="#8fb84a" castShadow={false} />
-      {/* blueberries tucked in between */}
+      {/* blueberries */}
       {[
         [0.0, 0.02],
         [0.022, 0.012],
@@ -177,7 +175,7 @@ function FruitTart({ position }: { position: Vec3 }) {
   )
 }
 
-// a sheet of paper lying flat. rotationY spins it on the table
+// flat sheet of paper
 function Paper({ position: [x, y, z], rotationY, color = COLOR.label }: { position: Vec3; rotationY: number; color?: string }) {
   return (
     <mesh position={[x, y + 0.001, z]} rotation={[0, rotationY, 0]} receiveShadow>
@@ -191,14 +189,14 @@ function Pen({ position: [x, y, z], rotationY, color }: { position: Vec3; rotati
   return <Cylinder position={[x, y + 0.005, z]} radius={0.005} height={0.14} segments={5} rotation={[0, rotationY, Math.PI / 2]} color={color} />
 }
 
-// papers by each occupied seat, a notebook and pens in the middle, a cup each
+// study table clutter
 function StudyClutter() {
   const [tx, , tz] = STUDY_TABLE.position
   const y = TABLE_HEIGHT
   return (
     <group>
       {STUDY_SEATS.filter((seat) => seat.occupied).map(({ position: [sx, , sz] }, i) => {
-        // toward the middle of the table from this seat
+        // toward the table center
         const inward = sz < tz ? 1 : -1
         return (
           <group key={i}>
@@ -208,7 +206,7 @@ function StudyClutter() {
           </group>
         )
       })}
-      {/* open notebook in the middle */}
+      {/* open notebook */}
       <Paper position={[tx - 0.1, y, tz]} rotationY={1.5} color="#f5f0e1" />
       <Paper position={[tx + 0.12, y, tz]} rotationY={1.6} color="#f5f0e1" />
       <mesh position={[tx + 0.01, y + 0.004, tz]} rotation={[0, 1.55, 0]}>
@@ -217,7 +215,7 @@ function StudyClutter() {
       </mesh>
       <Pen position={[tx + 0.3, y, tz + 0.12]} rotationY={0.7} color={COLOR.black} />
       <Pen position={[tx - 0.32, y, tz - 0.1]} rotationY={-0.4} color="#2f4f8f" />
-      {/* closed notebook by the empty chair */}
+      {/* closed one by the empty seat */}
       <mesh position={[tx + 0.3, y + 0.008, tz + 0.25]} rotation={[0, 0.2, 0]} castShadow>
         <boxGeometry args={[0.18, 0.016, 0.25]} />
         <meshStandardMaterial color="#2f3f36" flatShading />
@@ -226,9 +224,7 @@ function StudyClutter() {
   )
 }
 
-// the sleeper's table: papers under his arms, and the coffee he knocked over.
-// the mug lies on its side, the coffee runs west to the table edge and drips
-// onto the floor (the camera's side, so you see the drips)
+// sleeper's table. spill runs west (toward the camera) and drips off the edge
 function SleeperClutter() {
   const [tx, , tz] = SLEEPER_TABLE.position
   const [sx, , sz] = SLEEPER_SEAT
@@ -244,7 +240,7 @@ function SleeperClutter() {
       <Pen position={[tx + 0.3, y, tz + 0.05]} rotationY={0.9} color={COLOR.black} />
 
       <TippedMug position={[cupX, y, spillZ]} />
-      {/* puddle: overlapping flat blobs running from the mug's mouth to the edge */}
+      {/* puddle, overlapping blobs from the mug to the edge */}
       {[
         [cupX - 0.08, 0.06],
         [cupX - 0.16, 0.075],
@@ -253,7 +249,7 @@ function SleeperClutter() {
       ].map(([x, r], i) => (
         <Coffee key={i} position={[x, y + 0.0015 + i * 0.0002, spillZ + (i % 2 ? 0.02 : -0.015)]} radius={r} />
       ))}
-      {/* a bead hanging off the edge, drops falling from it, puddle on the floor */}
+      {/* drip + floor puddle */}
       <mesh position={[edgeX - 0.004, y - 0.015, spillZ]}>
         <boxGeometry args={[0.008, 0.03, 0.02]} />
         <meshStandardMaterial color={COLOR.coffee} roughness={0.05} />
@@ -274,13 +270,13 @@ function Coffee({ position, radius }: { position: Vec3; radius: number }) {
   )
 }
 
-// mug lying on its side, mouth pointing west toward the puddle
+// tipped over mug, mouth facing west
 function TippedMug({ position: [x, y, z] }: { position: Vec3 }) {
   const cream = COLOR.ceramics[0]
   return (
     <group position={[x, y + 0.042, z]} rotation={[0, 0, Math.PI / 2]}>
       <Cylinder position={[0, 0, 0]} radius={[0.042, 0.035]} height={0.09} segments={10} color={cream} roughness={0.4} />
-      {/* the last of the coffee running out over the bottom lip (local axes are turned with the mug) */}
+      {/* coffee spilling over the lip (axes rotate with the mug) */}
       <mesh position={[-0.03, 0.05, 0]}>
         <boxGeometry args={[0.012, 0.03, 0.03]} />
         <meshStandardMaterial color={COLOR.coffee} roughness={0.05} />
@@ -291,9 +287,9 @@ function TippedMug({ position: [x, y, z] }: { position: Vec3 }) {
 }
 
 const DRIPS = 3
-const DRIP_PERIOD = 1.4 // seconds between drops from the edge
+const DRIP_PERIOD = 1.4 // seconds
 
-// drops that fall from the table edge to the floor with gravity, one at a time
+// one drop at a time, falls with gravity
 function Drips({ position }: { position: Vec3 }) {
   const drops = useRef<Mesh[]>([])
   const height = position[1]
@@ -327,15 +323,15 @@ function Drips({ position }: { position: Vec3 }) {
   )
 }
 
-// --- poker at the round table
-// meters. ~1.6x a real card so the flop reads from across the room
+// --- poker
+// ~1.6x real size so the flop is readable from the camera
 const CARD = { width: 0.1, length: 0.14 }
 
 type Suit = 'hearts' | 'diamonds' | 'spades' | 'clubs'
-// \uFE0E asks for the plain text symbol, not an emoji
+// \uFE0E = text glyph, not emoji
 const SUIT_SYMBOL: Record<Suit, string> = { hearts: '♥\uFE0E', diamonds: '♦\uFE0E', spades: '♠\uFE0E', clubs: '♣\uFE0E' }
 
-// face up in the middle, left to right as seen from the opening camera
+// left to right from the opening camera
 const FLOP: { rank: string; suit: Suit }[] = [
   { rank: '4', suit: 'hearts' },
   { rank: 'A', suit: 'diamonds' },
@@ -346,32 +342,32 @@ const CHIP_COLORS = ['#b5262a', '#efe9dd', '#2f4f8f', '#3f6b35', '#1e1e20']
 function PokerGame() {
   const [tx, , tz] = GROUP_TABLE.position
   const y = TABLE_HEIGHT
-  // turn the flop so it reads left to right, right side up, from where the camera starts
+  // rotate the flop to face the starting camera
   const [cx, , cz] = CAMERA_PATH.start
   const facing = Math.atan2(-(tx - cx), -(tz - cz))
   const backTexture = useMemo(() => cardBackTexture(), [])
 
   return (
     <group>
-      {/* flop, deck and dealer button, lined up across the middle */}
+      {/* flop, deck, dealer button */}
       <group position={[tx, y, tz]} rotation={[0, facing, 0]}>
         {FLOP.map((card, i) => (
           <FaceUpCard key={i} position={[(i - 1) * 0.115, 0.001, 0]} rank={card.rank} suit={card.suit} />
         ))}
-        {/* deck, face down, off to the side of the flop */}
+        {/* deck */}
         <mesh position={[0.26, 0.006, -0.02]} castShadow>
           <boxGeometry args={[CARD.width, 0.012, CARD.length]} />
           <meshStandardMaterial color={COLOR.label} />
         </mesh>
         <CardBack position={[0.26, 0.0125, -0.02]} texture={backTexture} />
-        {/* dealer button, behind the flop so nothing sits between it and the camera */}
+        {/* dealer button, behind the flop so the camera can see it */}
         <Cylinder position={[-0.24, 0.004, -0.12]} radius={0.018} height={0.008} segments={12} color={COLOR.label} />
       </group>
 
-      {/* each player: two hole cards face down and their chips, near the table edge so the middle stays clear */}
+      {/* hole cards + chips per player */}
       {GROUP_SEATS.map((seat, i) => {
         const [sx, , sz] = seat
-        // turned to face this player, pushed out toward them from the middle
+        // face the player, offset toward them
         const towardSeat = Math.atan2(sx - tx, sz - tz)
         return (
           <group key={i} position={[tx, y, tz]} rotation={[0, towardSeat, 0]}>
@@ -387,7 +383,7 @@ function PokerGame() {
   )
 }
 
-// lying flat, top of the card pointing away (-z), face drawn on a little canvas
+// flat card, top toward -z, face drawn to a canvas
 function FaceUpCard({ position, rank, suit }: { position: Vec3; rank: string; suit: Suit }) {
   const texture = useMemo(() => cardFaceTexture(rank, suit), [rank, suit])
   return (
@@ -407,7 +403,7 @@ function CardBack({ position, rotationY = 0, texture }: { position: Vec3; rotati
   )
 }
 
-// a short stack of chips, colors picked from CHIP_COLORS, same every load
+// chip stack, seeded colors
 function ChipStack({ position: [x, y, z], count, seed }: { position: Vec3; count: number; seed: number }) {
   return (
     <group position={[x, y, z]}>
@@ -444,10 +440,8 @@ function cardFaceTexture(rank: string, suit: Suit) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   const symbol = SUIT_SYMBOL[suit]
-  // big rank and suit filling the middle so it reads from across the room,
-  // plus small corner indexes like a real card
-  // rank sits on a baseline at y 100 (no letters here dip below it), the suit starts
-  // at y 112, so there's always a gap between them whatever the font
+  // big center rank/suit for readability + small corner index.
+  // rank baseline is y=100 and suit starts at 112 so they never overlap
   ctx.textBaseline = 'alphabetic'
   ctx.font = 'bold 90px Georgia, serif'
   ctx.fillText(rank, width / 2, 100)
@@ -469,7 +463,7 @@ function cardFaceTexture(rank: string, suit: Suit) {
   return texture
 }
 
-// simple original back: white border, red field, a light diamond lattice
+// card back: border, red field, diamond lattice
 function cardBackTexture() {
   const { width, height } = CARD_PX
   const canvas = document.createElement('canvas')
@@ -480,7 +474,7 @@ function cardBackTexture() {
   ctx.fillRect(0, 0, width, height)
   ctx.fillStyle = '#9e2a2b'
   ctx.fillRect(10, 10, width - 20, height - 20)
-  // keep the lattice inside the red field
+  // clip to the red field
   ctx.save()
   ctx.beginPath()
   ctx.rect(10, 10, width - 20, height - 20)

@@ -5,13 +5,11 @@ import type { Vec3 } from './layout'
 
 export type StickerKind = 'swords' | 'music'
 
-// round logos on laptop screens that open one of my pages when clicked.
-// image: logo file in apps/web/public/stickers/. it gets pixelated (see PIXELATE) and
-// drawn on the sticker's background circle; transparent PNGs look best.
-// a missing file just shows the drawn symbol instead.
-// symbol ends in \uFE0E so it draws as plain text, not an emoji
-// pixels / levels / fill: how chunky the logo gets (see pixelate) and how much of the
-// circle it fills. logos with thin details need more pixels to survive
+// clickable logo stickers on some laptop screens, they open links.ts.
+// images live in public/stickers/ (transparent png works best), they get pixelated
+// and drawn on a colored circle. if the file is missing the symbol is drawn instead.
+// \uFE0E forces text rendering instead of emoji.
+// pixels/levels: how chunky the pixelation is. fill: how much of the circle the logo takes
 type Sticker = {
   link: string
   image: string
@@ -34,7 +32,7 @@ const STICKERS: Record<StickerKind, Sticker> = {
     levels: 5,
     fill: 0.7,
   },
-  // its thin curved lines need a finer grid and more color steps than the league one
+  // thin lines, needs a finer grid than league
   music: {
     link: LINKS.music,
     image: '/stickers/spotify.png',
@@ -47,18 +45,17 @@ const STICKERS: Record<StickerKind, Sticker> = {
   },
 }
 
-// a bit bigger than a real sticker so it reads from across the room
+// oversized so it's visible from a distance
 const RADIUS = 0.055
 
 
 type LaptopStickerProps = { kind: StickerKind; position: Vec3; rotationY?: number; onScreen?: boolean }
 
-// onScreen = drawn unlit, like pixels on a display, so it glows with the screen instead of
-// being darkened by the room's lighting
+// onScreen: unlit so it matches the screen glow instead of picking up room light
 export function LaptopSticker({ kind, position, rotationY = 0, onScreen = false }: LaptopStickerProps) {
   const sticker = STICKERS[kind]
   const { link, image } = sticker
-  // start with the drawn symbol, swap in the logo image once it loads
+  // symbol first, swap to the image once it loads
   const [texture, setTexture] = useState(() => stickerTexture(sticker))
   const [hovered, setHovered] = useState(false)
 
@@ -66,12 +63,12 @@ export function LaptopSticker({ kind, position, rotationY = 0, onScreen = false 
     if (!image) return
     const logo = new Image()
     logo.onload = () => setTexture(stickerTexture(sticker, logo))
-    // a missing or broken file keeps the drawn symbol
+    // keep the symbol if the image fails
     logo.src = image
   }, [image, sticker])
   const clickable = link !== ''
 
-  // put the cursor back if the sticker unmounts while hovered
+  // reset cursor if unmounted while hovered
   useEffect(() => () => void (document.body.style.cursor = ''), [])
 
   return (
@@ -113,7 +110,7 @@ function stickerTexture({ background, ink, symbol, ...grid }: Sticker, logo?: HT
   ctx.fill()
 
   if (logo) {
-    // pixelated logo, clipped to the circle
+    // clip logo to the circle
     ctx.save()
     ctx.beginPath()
     ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2)
@@ -129,7 +126,7 @@ function stickerTexture({ background, ink, symbol, ...grid }: Sticker, logo?: HT
     ctx.fillText(symbol, size / 2, size / 2 + 4)
   }
 
-  // thin light ring around the edge, like a die-cut sticker
+  // white edge ring
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
   ctx.lineWidth = 6
   ctx.beginPath()
@@ -138,13 +135,12 @@ function stickerTexture({ background, ink, symbol, ...grid }: Sticker, logo?: HT
 
   const texture = new CanvasTexture(canvas)
   texture.colorSpace = SRGBColorSpace
-  texture.magFilter = NearestFilter // keep the pixel edges hard
+  texture.magFilter = NearestFilter
   return texture
 }
 
-// draws the logo on a tiny canvas (`pixels` across) over the sticker color, then rounds
-// each color channel to `levels` steps for flat blocks of color. it gets scaled back up
-// with hard edges. fewer pixels / levels = chunkier
+// downscale to `pixels` wide and posterize to `levels` per channel.
+// gets upscaled with nearest filtering, so lower = chunkier
 function pixelate(logo: HTMLImageElement, background: string, { pixels, levels, fill }: Pick<Sticker, 'pixels' | 'levels' | 'fill'>) {
   const small = document.createElement('canvas')
   small.width = pixels
@@ -152,7 +148,7 @@ function pixelate(logo: HTMLImageElement, background: string, { pixels, levels, 
   const ctx = small.getContext('2d')!
   ctx.fillStyle = background
   ctx.fillRect(0, 0, pixels, pixels)
-  // fit the logo in the middle, keeping its shape
+  // contain-fit, keep aspect ratio
   const fit = (pixels * fill) / Math.max(logo.width, logo.height)
   const w = logo.width * fit
   const h = logo.height * fit

@@ -12,14 +12,13 @@ import { PostEffects } from './PostEffects'
 import { Room } from './Room'
 import { Tabletops } from './Tabletop'
 
-// r3f canvas, sits behind the overlay.
-// flat = no tone mapping on the renderer, PostEffects does it instead
+// `flat` turns off renderer tone mapping, PostEffects does it
 export function Experience() {
   return (
     <div className="scene">
       <Canvas camera={{ fov: 45, near: 0.05, far: 60 }} dpr={[1, 2]} shadows flat>
         <color attach="background" args={[COLOR.night]} />
-        {/* faint warm haze that thickens with distance */}
+        {/* warm haze */}
         <fog attach="fog" args={[COLOR.haze, 9, 26]} />
         <CameraRig />
         <Lighting />
@@ -31,7 +30,7 @@ export function Experience() {
         <Tabletops />
         <Paintings />
         <PostEffects />
-        {/* dev only: frames per second, top left. click it to cycle ms per frame / memory */}
+        {/* fps counter, dev only */}
         {import.meta.env.DEV && <Stats />}
       </Canvas>
     </div>

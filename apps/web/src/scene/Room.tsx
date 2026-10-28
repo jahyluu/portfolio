@@ -5,8 +5,7 @@ import { COLOR, GLOW } from './palette'
 import { Box } from './primitives'
 import { RainGlass } from './RainGlass'
 
-// the shell: plank floor, paneled walls, beamed ceiling, window, door.
-// the street outside is in Outside.tsx
+// floor, walls, ceiling, window, door. outside is in Outside.tsx
 export function Room() {
   return (
     <group>
@@ -19,19 +18,17 @@ export function Room() {
   )
 }
 
-// storefront window: thick posts split it into big bays, low wood panel at the base
+// storefront window grid
 const WINDOW_GRID = { bays: 4, knee: 0.45, post: 0.1, depth: 0.08 }
 
 const PLANK_WIDTH = 0.16
 const PLANK_LENGTH = 1.2
-// how far each row's joints shift along, as a fraction of a plank. cycles every 5
-// rows (0, .4, .8, .2, .6) so the joints never line up into a diagonal staircase
+// per-row joint offset (fraction of a plank). 5-row cycle so the joints don't form a diagonal
 const ROW_STAGGER = 0.4
 const GAP = 0.006
 const WALL_THICKNESS = 0.1
 
-// planks run east-west, staggered row to row like a real floor.
-// one instanced mesh = one draw call for all of them
+// E-W planks, staggered rows, all one instanced mesh
 function Floor() {
   const { width, centerZ, depth } = ROOM
   const planks = useMemo(() => layOutPlanks(), [])
@@ -53,10 +50,10 @@ function Floor() {
 
   return (
     <group>
-      {/* dark underlay that shows in the gaps between planks */}
+      {/* shows through the plank gaps */}
       <Box position={[0, -0.07, centerZ]} size={[width, 0.06, depth]} color={COLOR.floorBase} castShadow={false} />
       <instancedMesh ref={mesh} args={[undefined, undefined, planks.length]} receiveShadow>
-        {/* full-length plank. ones cut short at the walls are scaled down */}
+        {/* full plank, the ones at the walls get scaled down */}
         <boxGeometry args={[PLANK_LENGTH - GAP, 0.04, PLANK_WIDTH - GAP]} />
         <meshStandardMaterial flatShading roughness={0.75} />
       </instancedMesh>
@@ -73,12 +70,12 @@ function layOutPlanks(): Plank[] {
   for (let row = 0; row < rows; row++) {
     const z = minZ + PLANK_WIDTH * (row + 0.5)
     const offset = ((row * ROW_STAGGER) % 1) * PLANK_LENGTH
-    // start one plank early so the first one gets cut at the west wall
+    // start a plank early so the first one is cut by the wall
     for (let start = minX - offset, i = 0; start < maxX; start += PLANK_LENGTH, i++) {
       const from = Math.max(start, minX)
       const to = Math.min(start + PLANK_LENGTH, maxX)
       if (to - from < 0.05) continue
-      // pseudo-random shade per plank, same every load
+      // random shade per plank
       const pick = Math.floor(Math.abs(Math.sin(row * 12.9898 + i * 78.233) * 43758.5453)) % COLOR.floorPlanks.length
       planks.push({ x: (from + to) / 2, z, length: to - from, color: COLOR.floorPlanks[pick] })
     }
@@ -86,7 +83,7 @@ function layOutPlanks(): Plank[] {
   return planks
 }
 
-// a hole through a wall: from/to along the wall, bottom/top heights
+// opening in a wall. from/to = along the wall, bottom/top = height
 type Opening = { from: number; to: number; bottom: number; top: number }
 
 function Walls() {
@@ -107,9 +104,8 @@ function Walls() {
 type Piece = { from: number; to: number; bottom: number; top: number }
 type RunProps = { along: 'x' | 'z'; at: number; from: number; to: number; openings?: Opening[] }
 
-// one wall, split into pieces around its openings: full-height pieces between them,
-// plus a piece above and below each opening. along = the axis it runs along,
-// at = its center line on the other axis
+// builds a wall out of pieces around its openings.
+// along = axis it runs on, at = position on the other axis
 function WallRun({ along, at, from, to, openings = [] }: RunProps) {
   const pieces: Piece[] = []
   let cursor = from
@@ -131,9 +127,8 @@ function WallRun({ along, at, from, to, openings = [] }: RunProps) {
 
 type PieceProps = { along: 'x' | 'z'; at: number; piece: Piece; capStart: boolean; capEnd: boolean }
 
-// dark wood below the rail, plaster above, the rail where they meet. the wood and
-// rail stick out a little past the plaster. caps = also run past the ends, so they
-// wrap the room's corners (not at openings, where the frame covers the edge)
+// wainscot + rail + plaster. caps = extend past the ends to wrap the corners
+// (skipped at openings since the frame covers it)
 function WallPiece({ along, at, piece: { from, to, bottom, top }, capStart, capEnd }: PieceProps) {
   const w = WAINSCOT_HEIGHT
   const slab = (y0: number, y1: number, grow: number, color: string) => {
@@ -167,7 +162,7 @@ function Ceiling() {
       {beamsZ.map((z) => (
         <Box key={`z${z}`} position={[0, beamY, z]} size={[width, beamDepth, beamWidth]} color={COLOR.beam} castShadow={false} />
       ))}
-      {/* the visible lamp disk for each downlight. the light itself is in Lighting */}
+      {/* downlight disks, the actual lights are in Lighting.tsx */}
       {DOWNLIGHTS.map(({ position: [x, , z] }, i) => (
         <mesh key={i} position={[x, height - 0.005, z]}>
           <cylinderGeometry args={[0.06, 0.06, 0.01, 12]} />
@@ -192,9 +187,9 @@ function WindowFrame() {
       {/* knee panel + sill */}
       <Box position={[x, knee / 2, zMid]} size={[depth, knee, width]} color={COLOR.wainscot} castShadow={false} />
       <Box position={[x - 0.02, knee, zMid]} size={[depth + 0.04, 0.05, width + 0.04]} color={COLOR.windowFrame} castShadow={false} />
-      {/* head rail along the top */}
+      {/* head rail */}
       <Box position={[x, yTo - post / 2, zMid]} size={[depth, post, width]} color={COLOR.windowFrame} castShadow={false} />
-      {/* thick posts between bays, including both ends */}
+      {/* posts */}
       {Array.from({ length: bays + 1 }, (_, b) => (
         <Box key={`post${b}`} position={[x, glassMid, zFrom + b * bayWidth]} size={[depth, glassHeight, post]} color={COLOR.windowFrame} castShadow={false} />
       ))}
@@ -203,8 +198,7 @@ function WindowFrame() {
   )
 }
 
-// glass door in a warm wood frame, set into the opening in the south wall:
-// one big pane, narrow stiles on the sides, a deeper rail at the bottom
+// glass door in the south wall
 const DOOR_GLASS = { side: 0.1, top: 0.12, bottom: 0.2 }
 const DOOR_DEPTH = 0.05
 
@@ -213,7 +207,7 @@ function Door() {
   const { side, top, bottom } = DOOR_GLASS
   const width = xTo - xFrom
   const x = xFrom + width / 2
-  const z = BOUNDS.maxZ + WALL_THICKNESS / 2 // middle of the wall
+  const z = BOUNDS.maxZ + WALL_THICKNESS / 2
   const roomFace = z - DOOR_DEPTH / 2
   const glassWidth = width - side * 2
   const glassHeight = height - top - bottom
@@ -226,12 +220,12 @@ function Door() {
       <Box position={[x, height - top / 2, z]} size={[glassWidth, top, DOOR_DEPTH]} color={COLOR.windowFrame} castShadow={false} />
       <Box position={[x, bottom / 2, z]} size={[glassWidth, bottom, DOOR_DEPTH]} color={COLOR.windowFrame} castShadow={false} />
       <RainGlass position={[x, bottom + glassHeight / 2, z]} rotationY={Math.PI} width={glassWidth} height={glassHeight} />
-      {/* trim around the opening on the room side, and the threshold */}
+      {/* trim + threshold */}
       <Box position={[xFrom - 0.03, (height + 0.06) / 2, trimZ]} size={[0.06, height + 0.06, 0.054]} color={COLOR.trim} castShadow={false} />
       <Box position={[xTo + 0.03, (height + 0.06) / 2, trimZ]} size={[0.06, height + 0.06, 0.054]} color={COLOR.trim} castShadow={false} />
       <Box position={[x, height + 0.03, trimZ]} size={[width + 0.12, 0.06, 0.054]} color={COLOR.trim} castShadow={false} />
       <Box position={[x, 0.005, z]} size={[width, 0.03, WALL_THICKNESS]} color={COLOR.trim} castShadow={false} />
-      {/* thin vertical pull handle on the stile */}
+      {/* pull handle */}
       <Box position={[xTo - side / 2, 1.0, roomFace - 0.03]} size={[0.025, 0.25, 0.025]} color={COLOR.brass} />
     </group>
   )

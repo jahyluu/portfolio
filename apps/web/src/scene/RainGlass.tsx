@@ -4,12 +4,10 @@ import { ShaderMaterial, Vector2 } from 'three'
 import type { Vec3 } from './layout'
 import { COLOR } from './palette'
 
-// a pane of glass with rain on it: low-poly diamond drops (faceted, lit from the upper
-// left) running down the glass, each leaving a thin wet trail. no drops sitting still
-// on the glass: from across the room they read as snow. sizes are in meters, so the door pane and the
-// storefront get the same size drops. it's all drawn in a shader on one flat plane,
-// so it's cheap however many drops there are.
-// drops are a little bigger than real ones so they read from across the room
+// rain running down a window pane, all in a shader on one plane.
+// faceted diamond drops with a thin trail behind each. sizes are in meters so every
+// pane gets the same drop size. drops are oversized on purpose, real size is invisible
+// from across the room. no static beads, they looked like snow
 
 type RainGlassProps = { position: Vec3; rotationY: number; width: number; height: number }
 
@@ -36,7 +34,7 @@ export function RainGlass({ position, rotationY, width, height }: RainGlassProps
         <planeGeometry args={[width, height]} />
         <meshStandardMaterial color={COLOR.glass} transparent opacity={0.06} roughness={0.05} depthWrite={false} />
       </mesh>
-      {/* rain sits just on the room side of the glass */}
+      {/* just inside the glass */}
       <mesh position={[0, 0, 0.003]} material={rain}>
         <planeGeometry args={[width, height]} />
       </mesh>
@@ -54,7 +52,7 @@ void main() {
 
 const FRAGMENT = /* glsl */ `
 uniform float uTime;
-uniform vec2 uSize; // pane size in meters
+uniform vec2 uSize; // meters
 varying vec2 vUv;
 
 float hash(vec2 p) {
@@ -63,9 +61,8 @@ float hash(vec2 p) {
   return fract(p.x * p.y);
 }
 
-// a diamond at offset d (meters) from its center, half-width w, half-height h.
-// returns how much of this pixel it covers, and the shade of the facet it's on:
-// lit from the upper left, so four facets from light to dark
+// diamond with half-size (w, h), d = offset from its center in meters.
+// returns (coverage, facet shade). light comes from the upper left
 vec2 diamond(vec2 d, float w, float h) {
   float k = abs(d.x) / w + abs(d.y) / h;
   float cover = 1.0 - smoothstep(0.82, 1.0, k);
@@ -73,9 +70,8 @@ vec2 diamond(vec2 d, float w, float h) {
   return vec2(cover, shade);
 }
 
-// a long diamond sliding down its column with a little wiggle, a thin wet trail
-// behind it. it reaches the bottom, waits, and starts again from the top.
-// most columns (about three quarters) have a runner
+// one drop sliding down a column with some wiggle, then a pause before it restarts.
+// ~3/4 of columns get one
 vec2 runner(vec2 m, float column, float t, float seed) {
   float col = floor(m.x / column);
   float h = hash(vec2(col, seed));
@@ -94,15 +90,15 @@ vec2 runner(vec2 m, float column, float t, float seed) {
 }
 
 void main() {
-  vec2 m = vUv * uSize; // meters from the bottom left corner
-  // three layers of columns at different spacings and speeds, so the streaks don't line up
+  vec2 m = vUv * uSize; // meters from bottom left
+  // 3 layers with different spacing/speed so the streaks don't line up
   vec2 best = runner(m, 0.16, uTime, 1.0);
   vec2 other = runner(m + vec2(0.08, 0.0), 0.23, uTime * 0.8, 2.0);
   if (other.x > best.x) best = other;
   other = runner(m + vec2(0.035, 0.0), 0.19, uTime * 1.15, 3.0);
   if (other.x > best.x) best = other;
   if (best.x < 0.01) discard;
-  // water catching a little light, shaded by facet
+  // tint by facet
   gl_FragColor = vec4(vec3(0.72, 0.76, 0.84) * best.y, best.x * 0.4);
 }
 `

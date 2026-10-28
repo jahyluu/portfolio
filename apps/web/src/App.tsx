@@ -10,7 +10,7 @@ export default function App() {
     <>
       <Experience />
       <HeroOverlay />
-      {/* empty, just gives the page its scroll length */}
+      {/* spacer for scroll height */}
       <div className="scroll-track" aria-hidden="true" />
       {import.meta.env.DEV && <p className="dev-hint">preview: press 1-5</p>}
     </>

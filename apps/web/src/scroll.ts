@@ -1,6 +1,5 @@
-// page scroll as 0 (top) -> 1 (bottom). plain object, not react state,
-// so scrolling never re-renders. scene reads it every frame.
-// also written to the --scroll css var so overlay stuff can fade in css
+// scroll progress 0-1. plain object instead of state so scrolling doesn't re-render,
+// the scene just reads it each frame. also mirrored to --scroll for css
 export const scroll = { progress: 0 }
 
 function maxScroll() {

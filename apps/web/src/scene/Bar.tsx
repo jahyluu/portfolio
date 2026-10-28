@@ -5,8 +5,7 @@ import { BRIGHTNESS } from './Lighting'
 import { COLOR, GLOW } from './palette'
 import { Box, Cylinder, GlassMaterial } from './primitives'
 
-// the long bar: body, bamboo top, foot rail, stools, self-serve station,
-// pastry case, register, ceramics, and the pendants over it
+// bar counter, stools, and everything on top of it
 const BAR_Z = BAR.frontZ - BAR.depth / 2
 const BAR_X = (BAR.xFrom + BAR.xTo) / 2
 const BAR_WIDTH = BAR.xTo - BAR.xFrom
@@ -17,8 +16,7 @@ export function Bar() {
       <Counter />
       <Stools />
       <SelfServe x={SELF_SERVE_X} />
-      {/* ordering end, under the menu: self-serve, register, pastries, teapots.
-          the rest of the bar is left clear for people sitting at it */}
+      {/* ordering end. rest of the bar stays clear for the stools */}
       <Register x={-0.45} />
       <PastryCase x={0.35} />
       <Ceramics x={1.1} />
@@ -34,9 +32,9 @@ function Counter() {
   return (
     <group>
       <Box position={[BAR_X, bodyHeight / 2, BAR_Z + 0.03]} size={[BAR_WIDTH, bodyHeight, BAR.depth - 0.06]} color={COLOR.barBody} />
-      {/* bamboo top, overhangs a little on every side */}
+      {/* top, slight overhang */}
       <Box position={[BAR_X, BAR.height - topThickness / 2, BAR_Z]} size={[BAR_WIDTH + 0.06, topThickness, BAR.depth + 0.06]} color={COLOR.bamboo} />
-      {/* panel seams on the customer side */}
+      {/* panel seams */}
       {Array.from({ length: panels - 1 }, (_, i) => (
         <Box
           key={i}
@@ -52,7 +50,7 @@ function Counter() {
   )
 }
 
-// one instanced mesh per stool part = 4 draw calls for all of them
+// instanced, one mesh per part
 function Stools() {
   const { x: xs, z } = BAR_STOOLS
   return (
@@ -90,7 +88,7 @@ function Register({ x }: { x: number }) {
     <group position={[x, BAR.height, BAR_Z]}>
       <Box position={[0, 0.04, 0]} size={[0.32, 0.08, 0.32]} color={COLOR.black} />
       <Box position={[0, 0.17, -0.04]} size={[0.04, 0.18, 0.04]} color={COLOR.black} />
-      {/* screen, tilted back and facing the barista */}
+      {/* screen faces the barista */}
       <group position={[0, 0.28, -0.05]} rotation={[0.35, 0, 0]}>
         <Box position={[0, 0, 0]} size={[0.28, 0.19, 0.02]} color={COLOR.black} />
         <mesh position={[0, 0, -0.011]} rotation={[0, Math.PI, 0]}>
@@ -102,7 +100,7 @@ function Register({ x }: { x: number }) {
   )
 }
 
-// teapots and cups on a bamboo tray, next to the register
+// teapots + cups on a tray
 function Ceramics({ x }: { x: number }) {
   const cups: [number, number][] = [
     [-0.15, 0.09],
@@ -139,8 +137,7 @@ function Teapot({ position, color }: { position: Vec3; color: string }) {
       <Cylinder position={[0, 0.112, 0]} radius={[0.03, 0.04]} height={0.02} color={color} />
       {/* spout */}
       <Cylinder position={[0.085, 0.07, 0]} radius={[0.008, 0.014]} height={0.07} rotation={[0, 0, -0.8]} color={color} />
-      {/* handle: a ring on the back that wraps past halfway (0.76 extra each side),
-          so both ends curl back into the round body */}
+      {/* handle: ring that wraps past halfway so the ends tuck into the body */}
       <mesh position={[-0.07, 0.06, 0]} rotation={[0, 0, Math.PI / 2 - 0.76]} castShadow>
         <torusGeometry args={[0.032, 0.008, 5, 12, Math.PI + 1.52]} />
         <meshStandardMaterial color={color} flatShading />
@@ -158,7 +155,7 @@ function PastryCase({ x }: { x: number }) {
   return (
     <group position={[x, BAR.height, BAR_Z]}>
       <Box position={[0, base / 2, 0]} size={[width + 0.04, base, depth + 0.04]} color={COLOR.barBody} />
-      {/* glass box and the glass shelf inside it */}
+      {/* glass + shelf */}
       <mesh position={[0, base + height / 2, 0]}>
         <boxGeometry args={[width, height, depth]} />
         <GlassMaterial />
@@ -168,7 +165,7 @@ function PastryCase({ x }: { x: number }) {
         <GlassMaterial />
       </mesh>
 
-      {/* bottom tier: two rows of croissants, muffins on the right */}
+      {/* bottom: croissants, muffins */}
       {[-0.32, -0.2, -0.08].flatMap((px) => [
         <Croissant key={`cf${px}`} position={[px, base, 0.08]} />,
         <Croissant key={`cb${px}`} position={[px, base, -0.07]} />,
@@ -179,7 +176,7 @@ function PastryCase({ x }: { x: number }) {
       <Muffin position={[0.12, base, -0.07]} />
       <Muffin position={[0.25, base, -0.07]} />
 
-      {/* top tier: croissants up front, cookies behind, cinnamon rolls on the right */}
+      {/* top: croissants, cookies, cinnamon rolls */}
       <Croissant position={[-0.3, shelfY, 0.07]} />
       <Croissant position={[-0.18, shelfY, 0.07]} />
       <Croissant position={[-0.06, shelfY, 0.07]} />
@@ -191,7 +188,7 @@ function PastryCase({ x }: { x: number }) {
       <CinnamonRoll position={[0.17, shelfY, -0.07]} />
       <Cylinder position={[0.31, shelfY + 0.006, -0.07]} radius={0.035} height={0.012} color={COLOR.cookie} />
 
-      {/* small warm light inside the case */}
+      {/* case light */}
       <pointLight position={[0, base + height - 0.04, 0]} color={COLOR.warmLight} intensity={0.5 * BRIGHTNESS} distance={1} decay={2} />
     </group>
   )
@@ -227,7 +224,7 @@ function CinnamonRoll({ position: [x, y, z] }: { position: Vec3 }) {
   )
 }
 
-// small dome lamps hanging over the bar on short cords, each with its own warm light
+// dome pendants over the bar
 function Pendants() {
   const { y, x: xs } = BAR_PENDANTS
   const cord = ROOM.height - y
@@ -244,7 +241,7 @@ function Pendants() {
             <sphereGeometry args={[0.035, 8, 6]} />
             <meshBasicMaterial color={GLOW.bulb} />
           </mesh>
-          {/* higher up than before, so a bit stronger to still reach the bar */}
+          {/* hung high, so a bit stronger to reach the bar top */}
           <pointLight position={[0, -0.06, 0]} color={COLOR.warmLight} intensity={2.5 * BRIGHTNESS} distance={3.5} decay={2} />
         </group>
       ))}
@@ -252,27 +249,26 @@ function Pendants() {
   )
 }
 
-// help-yourself station: napkins, straws, sugar packets, stir sticks, cream,
-// shakers and lids on a bamboo tray. x = tray center
+// self-serve tray (napkins, straws, sugar, etc). x = center
 function SelfServe({ x }: { x: number }) {
-  const front = 0.07 // toward the customers
+  const front = 0.07 // customer side
   const back = -0.07
   const packets = ['#f2efe8', '#b07a4a', '#e8a0b4', '#7fa7d9', '#e8cf5a', '#f2efe8', '#b07a4a', '#7fa7d9']
   const straws = [
     '#1e1e20', '#efe9dd', '#b5262a', '#1e1e20', '#efe9dd', '#3f6b35', '#efe9dd',
     '#1e1e20', '#b5262a', '#efe9dd', '#3f6b35', '#1e1e20', '#efe9dd', '#b5262a',
   ]
-  // first few in a tight inner ring, the rest around them
+  // inner ring first, then outer
   const innerRing = 5
   return (
     <group position={[x, BAR.height, BAR_Z]}>
       <Box position={[0, 0.01, 0]} size={[0.8, 0.02, 0.32]} color={COLOR.bamboo} />
 
-      {/* napkin dispenser with the top napkin showing */}
+      {/* napkin dispenser */}
       <Box position={[-0.3, 0.07, front]} size={[0.14, 0.1, 0.1]} color={COLOR.steel} roughness={0.35} />
       <Box position={[-0.3, 0.123, front]} size={[0.11, 0.006, 0.08]} color={COLOR.label} castShadow={false} />
 
-      {/* straws standing in a glass */}
+      {/* straws */}
       <mesh position={[-0.13, 0.12, front]}>
         <cylinderGeometry args={[0.045, 0.045, 0.2, 8]} />
         <GlassMaterial />
@@ -295,7 +291,7 @@ function SelfServe({ x }: { x: number }) {
         )
       })}
 
-      {/* sugar caddy, packets standing up in it */}
+      {/* sugar packets */}
       <Box position={[0.07, 0.045, front]} size={[0.13, 0.05, 0.08]} color={COLOR.barBody} />
       {packets.map((color, i) => (
         <Box key={i} position={[0.02 + i * 0.014, 0.085, front]} size={[0.004, 0.05, 0.035]} color={color} castShadow={false} />
@@ -307,7 +303,7 @@ function SelfServe({ x }: { x: number }) {
         <Box key={dx} position={[0.25 + dx, 0.12, front]} size={[0.004, 0.14, 0.006]} color={COLOR.bamboo} castShadow={false} />
       ))}
 
-      {/* back row: cream carafes, cinnamon + cocoa shakers, stack of lids */}
+      {/* back row: cream, shakers, lids */}
       <Cylinder position={[-0.3, 0.08, back]} radius={0.04} height={0.12} color={COLOR.steel} roughness={0.35} />
       <Cylinder position={[-0.3, 0.15, back]} radius={0.03} height={0.02} color={COLOR.black} />
       <Cylinder position={[-0.19, 0.08, back]} radius={0.04} height={0.12} color={COLOR.steel} roughness={0.35} />

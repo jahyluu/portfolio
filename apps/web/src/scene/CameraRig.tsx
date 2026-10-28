@@ -4,14 +4,14 @@ import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
 import { scroll, scrollToProgress } from '../scroll'
 import { CAMERA_PATH, MY_SCREEN, SCREEN_SIZE, type Vec3 } from './layout'
 
-// how fast the camera catches up to the scroll. lower = floatier
+// lower = floatier
 const SMOOTHING = 5
-// < 1 so the display slightly overfills the window and the edges never show
+// < 1 so the screen overfills the viewport and the bezel never shows
 const FILL = 0.97
-// dev only: 1-5 jumps to 0, 25, 50, 75, 100% of the scroll
+// dev: keys 1-5 jump to these
 const PREVIEW_STOPS = [0, 0.25, 0.5, 0.75, 1]
 
-// scroll-driven camera on the spiral from layout.ts
+// camera follows the spiral in layout.ts based on scroll
 export function CameraRig() {
   const camera = useThree((state) => state.camera) as PerspectiveCamera
   const width = useThree((state) => state.size.width)
@@ -50,20 +50,20 @@ function toVector([x, y, z]: Vec3) {
   return new Vector3(x, y, z)
 }
 
-// spiral centered on my screen, from the corner to `end`.
-// returns a fn that fills in camera position + look-at point for t = 0-1
+// spiral around my screen from CAMERA_PATH.start to `end`.
+// returned fn writes position + look-at for t in [0, 1]
 function makeSpiral(end: Vec3) {
   const [cx, , cz] = MY_SCREEN.center
   const { start, startTarget, startPan, turnEase, dropEase } = CAMERA_PATH
 
   const startAngle = Math.atan2(start[0] - cx, start[2] - cz)
   let endAngle = Math.atan2(end[0] - cx, end[2] - cz)
-  // go around the window side, not the counter side
+  // go around the window side
   while (endAngle > startAngle) endAngle -= Math.PI * 2
 
   const startRadius = Math.hypot(start[0] - cx, start[2] - cz)
   const endRadius = Math.hypot(end[0] - cx, end[2] - cz)
-  // opening look-at point, nudged sideways by startPan (to the camera's right)
+  // startPan shifts the opening look-at to the camera's right
   const forward = new Vector3(startTarget[0] - start[0], 0, startTarget[2] - start[2]).normalize()
   const right = new Vector3(-forward.z, 0, forward.x)
   const lookFrom = toVector(startTarget).addScaledVector(right, startPan)
@@ -71,17 +71,17 @@ function makeSpiral(end: Vec3) {
 
   return (t: number, position: Vector3, target: Vector3) => {
     const angle = startAngle + (endAngle - startAngle) * (1 - (1 - t) ** turnEase)
-    // log spiral: shrinks by the same ratio every step, so the end never rushes
+    // log spiral, constant shrink ratio so it doesn't speed up at the end
     const radius = startRadius * (endRadius / startRadius) ** t
     const y = end[1] + (start[1] - end[1]) * (1 - t) ** dropEase
     position.set(cx + radius * Math.sin(angle), y, cz + radius * Math.cos(angle))
-    // gaze slides from my table to my screen over the first half
+    // look-at moves from the table to the screen over the first half
     target.lerpVectors(lookFrom, lookTo, MathUtils.smoothstep(t, 0, 0.5))
   }
 }
 
-// camera spot straight in front of my display where it covers the whole window.
-// wide window -> limited by display width, tall window -> by its height
+// distance where the screen fills the viewport.
+// wide viewports are limited by screen width, tall ones by height
 function fullScreenPosition(fovDegrees: number, aspect: number): Vec3 {
   const visibleHeight = Math.min(SCREEN_SIZE.height, SCREEN_SIZE.width / aspect) * FILL
   const distance = visibleHeight / (2 * Math.tan(MathUtils.degToRad(fovDegrees) / 2))

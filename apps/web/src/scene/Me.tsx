@@ -1,86 +1,40 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { CatmullRomCurve3, CylinderGeometry, DoubleSide, Group, IcosahedronGeometry, LatheGeometry, MathUtils, Mesh, Quaternion, SphereGeometry, TubeGeometry, Vector2, Vector3 } from 'three'
+import { CatmullRomCurve3, DoubleSide, Group, LatheGeometry, MathUtils, Mesh, Quaternion, TubeGeometry, Vector2, Vector3 } from 'three'
+import { Blob, LIMB, Limb, makeHairShell, placeLimb, reach, type Hairline } from './body'
 import { LAPTOP, ME, MY_TABLE, TABLE_HEIGHT, type Vec3 } from './layout'
 import { COLOR } from './palette'
 import { Chair } from './primitives'
 import { CoffeeCup } from './Tabletop'
 
-// me, at my table: early 20s, 5'8", slim. black hoodie (hood down) with drawstrings
-// and silver glasses hooked into the neckline, gray sweatpants, black sneakers,
-// AirPods Pro, silver watch on my left wrist, black hair in a two-block middle part. backpack on the floor.
-// facing +z (my laptop). my right is -x, the side the camera passes on.
-// idle: typing, small head movements, and every 16s I pick up my coffee for a sip.
-// the lean is kept small so the camera clears my head and shoulder by 7cm+ as it passes
+// me. faces +z (laptop), my right is -x, which is the side the camera passes.
+// typing loop + a sip of coffee every 16s.
+// careful with LEAN, the camera only clears my head/shoulder by ~7cm
 
-const LEAN = 0.16 // torso tilt forward from the hips, radians
-const HEAD_PITCH = 0.35 // looking down at the screen
+const LEAN = 0.16 // radians
+const HEAD_PITCH = 0.35
 const ARM = { upper: 0.31, fore: 0.31 }
 const [SX, , SZ] = ME.position
 const HIP = new Vector3(SX, 0.53, SZ)
-// where my wrists rest at the front of the keyboard (my right is -x)
+// wrist rest position on the keyboard
 const KEYS = { x: 0.085, y: TABLE_HEIGHT + 0.045, z: LAPTOP.position[2] - 0.1 }
-// my coffee: to my right, handle pointing out (away from the laptop)
+// coffee to my right
 const CUP_REST = new Vector3(MY_TABLE.position[0] - 0.38, TABLE_HEIGHT, MY_TABLE.position[2] - 0.22)
-// my wrist when holding it by the handle, relative to the cup
+// wrist offset from the cup when holding the handle
 const GRIP = new Vector3(-0.075, 0.055, -0.02)
 const SIP = { period: 16, start: 10 } // seconds
 
-// a point on my torso (x, up, forward from the hips) in the world, leaning forward
+// torso-local (x, up, forward) -> world, includes the lean
 function torso(x: number, up: number, forward: number, out = new Vector3()) {
   const c = Math.cos(LEAN)
   const s = Math.sin(LEAN)
   return out.set(HIP.x + x, HIP.y + up * c - forward * s, HIP.z + up * s + forward * c)
 }
 
-// where the elbow goes for a shoulder and wrist: two-bone reach, bending toward `pole`.
-// pulls the wrist in if it's out of reach. returns the (possibly moved) wrist too
-function reach(shoulder: Vector3, wrist: Vector3, pole: Vector3, elbow: Vector3) {
-  const { upper, fore } = ARM
-  const dir = wrist.clone().sub(shoulder)
-  const d = Math.min(dir.length(), upper + fore - 0.001)
-  dir.normalize()
-  wrist.copy(shoulder).addScaledVector(dir, d)
-  const along = (upper * upper - fore * fore + d * d) / (2 * d)
-  const off = Math.sqrt(Math.max(upper * upper - along * along, 0))
-  const bend = pole.clone().addScaledVector(dir, -pole.dot(dir)).normalize()
-  elbow.copy(shoulder).addScaledVector(dir, along).addScaledVector(bend, off)
-}
-
-const UP = new Vector3(0, 1, 0)
 const FORWARD = new Vector3(0, 0, 1)
-// a unit cylinder stretched between two points for limbs: full width where it starts,
-// narrower where it ends, so each segment tapers into the next joint
-const LIMB = new CylinderGeometry(0.82, 1, 1, 7)
-
-function placeLimb(mesh: Mesh, from: Vector3, to: Vector3, radius: number) {
-  const dir = to.clone().sub(from)
-  const length = dir.length()
-  mesh.position.copy(from).addScaledVector(dir, 0.5)
-  mesh.quaternion.setFromUnitVectors(UP, dir.normalize())
-  mesh.scale.set(radius, length, radius)
-}
-
-// a fixed limb between two points, in its parent's space (legs, drawstrings)
-function Limb({ from, to, radius, color }: { from: Vec3; to: Vec3; radius: number; color: string }) {
-  const ref = useRef<Mesh>(null!)
-  const placed = useRef(false)
-  useFrame(() => {
-    if (placed.current || !ref.current) return
-    placeLimb(ref.current, new Vector3(...from), new Vector3(...to), radius)
-    placed.current = true
-  })
-  return (
-    <mesh ref={ref} geometry={LIMB} castShadow receiveShadow>
-      <meshStandardMaterial color={color} flatShading />
-    </mesh>
-  )
-}
-
 const ease = (t: number) => MathUtils.smoothstep(t, 0, 1)
 
-// where I am in the sip, every stage as 0-1. `tip` is how far the cup (and my head)
-// tilt for the drink itself
+// sip stages as 0-1 values. `up` = how far into the actual drink
 function sipPose(t: number) {
   const u = t % SIP.period
   const stage = (from: number, length: number) => ease(MathUtils.clamp((u - from) / length, 0, 1))
@@ -94,8 +48,7 @@ function sipPose(t: number) {
   return { toCup, back, holding, reaching, up }
 }
 
-// head angles for time t: looking down at the screen with small idle movements,
-// lifting a little to drink
+// idle head motion, damped while drinking
 function headAngles(t: number) {
   const { up } = sipPose(t)
   return {
@@ -105,12 +58,12 @@ function headAngles(t: number) {
   }
 }
 
-// head pivot and lips, in the torso's own space (x, up, forward)
+// torso-local
 const HEAD_PIVOT = new Vector3(0, 0.585, 0.01)
 const LIPS = new Vector3(0, 0.072, 0.1)
-const CUP_TILT = -0.32 // a light sip, not a pour
+const CUP_TILT = -0.32
 const X_AXIS = new Vector3(1, 0, 0)
-// the near edge of the rim, from the cup's base, when tilted for the sip
+// near rim point relative to the cup base, tilted
 const RIM = new Vector3(0, 0.1, -0.042).applyAxisAngle(X_AXIS, CUP_TILT)
 
 export function Me() {
@@ -139,12 +92,12 @@ function Legs() {
           <group key={side}>
             <Limb from={[x, hipY, SZ]} to={knee} radius={0.075} color={COLOR.sweats} />
             <Limb from={knee} to={ankle} radius={0.062} color={COLOR.sweats} />
-            {/* knee joint, so thigh and shin read as one leg */}
+            {/* knee */}
             <mesh position={knee}>
               <icosahedronGeometry args={[0.062, 1]} />
               <meshStandardMaterial color={COLOR.sweats} flatShading />
             </mesh>
-            {/* sneaker and its sole */}
+            {/* shoe */}
             <mesh position={[ankle[0], 0.055, ankle[2] + 0.06]} castShadow>
               <boxGeometry args={[0.1, 0.085, 0.26]} />
               <meshStandardMaterial color={COLOR.shoe} flatShading />
@@ -156,15 +109,13 @@ function Legs() {
           </group>
         )
       })}
-      {/* hips, under the hoodie's hem */}
+      {/* hips */}
       <Blob position={[SX, 0.56, SZ + 0.01]} radii={[0.15, 0.06, 0.095]} color={COLOR.sweats} />
     </group>
   )
 }
 
-// the hoodie's body: a smooth lathe (spun outline) instead of stacked boxes,
-// squashed front to back. [radius, height above the hips]. the hem flares out a bit
-// so it drapes over the waistband
+// hoodie lathe profile, [radius, height above hips]. hem flares slightly
 const TORSO_OUTLINE: [number, number][] = [
   [0, -0.05],
   [0.13, -0.05],
@@ -178,15 +129,15 @@ const TORSO_OUTLINE: [number, number][] = [
   [0.148, 0.495],
   [0.11, 0.517],
   [0.075, 0.532],
-  [0.06, 0.55], // up around the base of the neck
+  [0.06, 0.55], // neck
   [0, 0.55],
 ]
-const TORSO_DEPTH = 0.6 // front-to-back, as a fraction of the width
+const TORSO_DEPTH = 0.6 // z scale
 const TORSO_SHAPE = new LatheGeometry(
   TORSO_OUTLINE.map(([r, y]) => new Vector2(r, y)),
   16,
 )
-// kangaroo pocket: a curved patch just proud of the front of the hoodie
+// kangaroo pocket
 const POCKET_SHAPE = new LatheGeometry(
   [
     [0.17, 0.05],
@@ -197,18 +148,7 @@ const POCKET_SHAPE = new LatheGeometry(
   -0.75,
   1.5,
 )
-// one smooth blob, scaled into ellipsoids for hair, the hood and the hips
-const BLOB = new SphereGeometry(1, 12, 8)
-
-function Blob({ position, radii, rotation = [0, 0, 0], color }: { position: Vec3; radii: Vec3; rotation?: Vec3; color: string }) {
-  return (
-    <mesh position={position} rotation={rotation} scale={radii} geometry={BLOB} castShadow>
-      <meshStandardMaterial color={color} flatShading />
-    </mesh>
-  )
-}
-
-// how far forward the hoodie's front surface is at height `up`, `x` from the middle
+// z of the hoodie's front surface at (x, up). used to lay the drawstrings on it
 function hoodieFront(x: number, up: number) {
   let radius = 0
   for (let i = 1; i < TORSO_OUTLINE.length; i++) {
@@ -222,8 +162,7 @@ function hoodieFront(x: number, up: number) {
   return TORSO_DEPTH * Math.sqrt(Math.max(radius * radius - x * x, 0))
 }
 
-// the hood, down: just a soft roll around the back and sides of my neck, fat at the back
-// and thinning to the front where its two ends meet the neckline
+// hood (down) as a tube around the neck, thicker at the back
 function makeHoodRoll() {
   const points: Vector3[] = []
   const steps = 24
@@ -255,8 +194,7 @@ function makeHoodRoll() {
 }
 const HOOD_ROLL = makeHoodRoll()
 
-// drawstrings: each comes out of the neckline where the hood's ends meet and lies down
-// the chest on the hoodie's surface, with a metal tip
+// drawstrings follow the hoodie surface
 const DRAWSTRINGS = [-1, 1].map((side) => {
   const points: Vector3[] = []
   for (let up = 0.53; up >= 0.31; up -= 0.02) {
@@ -266,7 +204,7 @@ const DRAWSTRINGS = [-1, 1].map((side) => {
   return { geometry: new TubeGeometry(new CatmullRomCurve3(points), 24, 0.0048, 6, false), tip: points[points.length - 1] }
 })
 
-// torso, hood, neck, glasses, drawstrings and head, all leaning together from the hips
+// everything that leans with the torso
 function Torso() {
   const head = useRef<Group>(null!)
 
@@ -309,9 +247,7 @@ function Torso() {
   )
 }
 
-// hood down: a thick rolled rim around the back and sides of the neck (open at the
-// front, where the drawstrings come out), and the hood itself lying flat on my upper
-// back, coming to a soft point
+// hood roll
 function Hood() {
   return (
     <group>
@@ -322,8 +258,7 @@ function Hood() {
   )
 }
 
-// silver glasses hung from the middle of the neckline by one arm (tucked inside the
-// collar, out of sight): the frame hangs vertically, one lens above the other
+// glasses hooked on the collar, hanging vertically
 function Glasses() {
   return (
     <group position={[0, 0.45, hoodieFront(0, 0.45) + 0.008]} rotation={[-0.12, 0, 0.06]}>
@@ -339,7 +274,7 @@ function Glasses() {
           </mesh>
         </group>
       ))}
-      {/* bridge, on the side since the frame hangs sideways */}
+      {/* bridge */}
       <mesh position={[0.012, 0, 0]}>
         <cylinderGeometry args={[0.0025, 0.0025, 0.012, 4]} />
         <meshStandardMaterial color={COLOR.silver} metalness={0.8} roughness={0.3} />
@@ -348,11 +283,11 @@ function Glasses() {
   )
 }
 
-// head, built facing +z around its center 0.12 above the neck
+// skull center is 0.12 above the pivot
 function Head() {
   return (
     <group>
-      {/* skull and ears */}
+      {/* skull + ears */}
       <mesh position={[0, 0.12, 0]} scale={[0.93, 1.08, 1]} castShadow>
         <icosahedronGeometry args={[0.108, 1]} />
         <meshStandardMaterial color={COLOR.skin} flatShading />
@@ -363,7 +298,7 @@ function Head() {
           <meshStandardMaterial color={COLOR.skin} flatShading />
         </mesh>
       ))}
-      {/* eyes, brows, a hint of a nose */}
+      {/* face */}
       {[-1, 1].map((side) => (
         <group key={side}>
           <mesh position={[side * 0.036, 0.125, 0.102]}>
@@ -381,7 +316,7 @@ function Head() {
         <meshStandardMaterial color={COLOR.skinShade} flatShading />
       </mesh>
       <Hair />
-      {/* AirPods Pro: bud in the ear, stem pointing down */}
+      {/* airpods */}
       {[-1, 1].map((side) => (
         <group key={side} position={[side * 0.11, 0.11, -0.004]}>
           <mesh>
@@ -398,81 +333,54 @@ function Head() {
   )
 }
 
-// hair: one low-poly shell around the skull. each point of an icosphere is pushed out
-// past the skull (hair) or pulled inside it (face, ears, neck), so the hairline is one
-// clean edge. the hairline is highest at the middle part and sweeps down into curtain
-// bangs over the brows, comes down in sideburns, arcs over the ears (short two-block sides), and comes down
-// to the nape at the back. fuller on top, with a groove for the part
+// two-block middle part, see makeHairShell in body.tsx
 const SKULL = { center: new Vector3(0, 0.12, 0), radii: new Vector3(0.108 * 0.93, 0.108 * 1.08, 0.108) }
 
-// [angle around the head, radians: 0 = the part, PI = the back; hairline height as the
-// y of a unit direction from the skull's center]
-const HAIRLINE: [number, number][] = [
+// [angle, height], 0 = front
+const HAIRLINE: Hairline = [
   [0, 0.52],
   [0.2, 0.36],
-  [0.45, 0.25], // curtain bangs, down to the brows
+  [0.45, 0.25], // bangs
   [0.8, 0.17],
   [1.0, -0.02],
-  [1.2, -0.2], // sideburns, down flush with the front of the ear
+  [1.2, -0.2], // sideburn
   [1.38, -0.16],
   [1.5, 0.1],
-  [1.62, 0.23], // a gentle arc just over the top of the ear
+  [1.62, 0.23], // over the ear
   [1.74, 0.1],
-  [1.86, -0.45], // then down behind it, filling in toward the back
+  [1.86, -0.45], // behind the ear
   [2.05, -0.74],
   [2.4, -0.86],
   [Math.PI, -0.88], // nape
 ]
 
-function hairlineAt(angle: number) {
-  for (let i = 1; i < HAIRLINE.length; i++) {
-    const [a1, h1] = HAIRLINE[i]
-    if (angle <= a1) {
-      const [a0, h0] = HAIRLINE[i - 1]
-      return MathUtils.lerp(h0, h1, MathUtils.smoothstep(angle, a0, a1))
-    }
-  }
-  return HAIRLINE[HAIRLINE.length - 1][1]
-}
-
-function makeHair() {
-  const s = MathUtils.smoothstep
-  const geometry = new IcosahedronGeometry(1, 4)
-  const position = geometry.attributes.position
-  const d = new Vector3()
-  for (let i = 0; i < position.count; i++) {
-    d.fromBufferAttribute(position, i).normalize()
-    const around = Math.atan2(d.x, d.z)
-    const angle = Math.abs(around)
-    const line = hairlineAt(angle)
-    // across the back the edge fades in over a wider band, so it lies flat on the nape
+const HAIR = makeHairShell({
+  skull: SKULL,
+  hairline: HAIRLINE,
+  // softer edge at the back so it doesn't stick out at the nape
+  edge: (angle, line) => {
+    const backness = MathUtils.smoothstep(angle, 1.8, 2.4)
+    return [line - 0.02 - 0.03 * backness, line + 0.05 + 0.1 * backness]
+  },
+  thickness: (d, angle, around, line) => {
+    const s = MathUtils.smoothstep
     const backness = s(angle, 1.8, 2.4)
-    const covered = s(d.y, line - 0.02 - 0.03 * backness, line + 0.05 + 0.1 * backness)
-    // volume: fuller on top and at the crown
+    // more volume on top
     let thickness = 0.07 + 0.24 * s(d.y, 0, 0.9) + 0.05 * s(-d.z, 0, 0.8) * s(d.y, -0.2, 0.5)
-    // curtain bangs bulge out a little as they sweep to the sides
+    // bangs
     thickness += 0.07 * Math.exp(-(((angle - 0.55) / 0.4) ** 2)) * s(d.y, 0.1, 0.45)
     // short sides
     thickness -= 0.035 * Math.exp(-(((angle - 1.7) / 0.3) ** 2)) * (1 - s(d.y, 0.2, 0.6))
-    // the part
+    // part
     thickness -= 0.11 * Math.exp(-((d.x / 0.09) ** 2)) * s(d.z, -0.2, 0.5) * s(d.y, 0.3, 0.7)
-    // soft ridges, like locks running down
+    // ridges
     thickness += 0.03 * Math.abs(Math.sin(around * 5)) * s(d.y, 0.85, 0.3)
-    // tapers in toward the nape
+    // taper at the nape
     thickness *= MathUtils.lerp(0.45, 1, s(d.y, -0.85, -0.1))
     thickness *= MathUtils.lerp(1, MathUtils.lerp(0.4, 1, s(d.y, line, line + 0.3)), backness)
-    const scale = MathUtils.lerp(0.8, 1 + thickness, covered)
-    position.setXYZ(
-      i,
-      SKULL.center.x + d.x * SKULL.radii.x * scale,
-      SKULL.center.y + d.y * SKULL.radii.y * scale,
-      SKULL.center.z + d.z * SKULL.radii.z * scale,
-    )
-  }
-  geometry.computeVertexNormals()
-  return geometry
-}
-const HAIR = makeHair()
+    return thickness
+  },
+})
 
 function Hair() {
   return (
@@ -482,8 +390,7 @@ function Hair() {
   )
 }
 
-// both arms, the watch and my coffee, all moved every frame:
-// typing, and now and then reaching over for a sip
+// arms, watch and cup, updated every frame
 function Arms() {
   const parts = useRef<Record<string, Mesh | Group>>({})
   const set = (key: string) => (object: Mesh | Group | null) => {
@@ -493,15 +400,14 @@ function Arms() {
   const scratch = useMemo(() => ({ wrist: new Vector3(), elbow: new Vector3(), pole: new Vector3(), cup: new Vector3(), q: new Quaternion() }), [])
 
   useFrame(({ clock }) => {
-    // every piece has to be mounted first. a missing one would throw here, and a throw
-    // inside useFrame stops the whole scene from drawing
+    // bail until all refs exist, a throw in useFrame kills the render loop
     const p = parts.current
     if (!p.cup || !p.watch || [0, 1].some((i) => !p[`upper${i}`] || !p[`fore${i}`] || !p[`hand${i}`] || !p[`shoulder${i}`] || !p[`elbow${i}`])) return
     const t = clock.elapsedTime
     const { wrist, elbow, pole, cup } = scratch
     const { toCup, back, holding, reaching, up } = sipPose(t)
 
-    // where the cup is: resting, or carried up so its rim meets my lips, tipped a little
+    // cup goes from the table to my lips
     const { pitch } = headAngles(t)
     const lips = LIPS.clone().applyAxisAngle(X_AXIS, pitch).add(HEAD_PIVOT)
     const atLips = torso(lips.x, lips.y, lips.z).sub(RIM)
@@ -513,30 +419,30 @@ function Arms() {
 
     ;[-1, 1].forEach((side, i) => {
       const shoulder = shoulders[i]
-      // typing: quick small taps, a little drift side to side
+      // typing
       const tap = Math.max(0, Math.sin(t * 13 + i * 2.1)) ** 8 * 0.012
       wrist.set(SX + side * KEYS.x + Math.sin(t * 1.3 + i) * 0.008, KEYS.y + tap, KEYS.z)
       pole.set(side * 0.6, -0.8, -0.2)
-      // my right hand (-x) goes for the coffee during the sip
+      // right hand grabs the cup during the sip
       if (side === -1 && reaching) {
         const grip = cup.clone().add(GRIP.clone().applyAxisAngle(X_AXIS, tilt))
         wrist.lerp(grip, holding ? 1 : toCup * (1 - back))
         pole.set(-0.8, -0.6, 0)
       }
-      reach(shoulder, wrist, pole, elbow)
+      reach(shoulder, wrist, pole, elbow, ARM.upper, ARM.fore)
       placeLimb(parts.current[`upper${i}`] as Mesh, shoulder, elbow, 0.056)
       placeLimb(parts.current[`fore${i}`] as Mesh, elbow, wrist, 0.047)
-      // rounded joints where the pieces meet, so the arm reads as one sleeve
+      // joint spheres
       parts.current[`shoulder${i}`].position.copy(shoulder)
       parts.current[`elbow${i}`].position.copy(elbow)
-      // hand: flat-ish, pointing on along the forearm
+      // hand
       const dir = wrist.clone().sub(elbow)
       dir.y *= 0.3
       dir.normalize()
       const hand = parts.current[`hand${i}`] as Mesh
       hand.position.copy(wrist).addScaledVector(dir, 0.05)
       hand.quaternion.setFromUnitVectors(FORWARD, dir)
-      // the watch sits on my left wrist (+x)
+      // watch on the left wrist
       if (side === 1) {
         const watch = parts.current.watch as Group
         const along = wrist.clone().sub(elbow).normalize()
@@ -570,7 +476,7 @@ function Arms() {
           </mesh>
         </group>
       ))}
-      {/* silver watch: band around the wrist, face on top */}
+      {/* watch */}
       <group ref={set('watch')}>
         <mesh>
           <torusGeometry args={[0.043, 0.008, 4, 10]} />
@@ -581,7 +487,7 @@ function Arms() {
           <meshStandardMaterial color={COLOR.silver} metalness={0.8} roughness={0.25} />
         </mesh>
       </group>
-      {/* my coffee, handle pointing away from the laptop */}
+      {/* coffee */}
       <group ref={set('cup')}>
         <CoffeeCup position={[0, 0, 0]} rotationY={Math.PI} steam />
       </group>
@@ -589,7 +495,7 @@ function Arms() {
   )
 }
 
-// on the floor to my left, leaning against the chair leg
+// on the floor, left of the chair
 function Backpack() {
   return (
     <group position={[SX + 0.42, 0, SZ + 0.05]} rotation={[-0.08, 0.4, 0]}>
@@ -601,7 +507,7 @@ function Backpack() {
         <icosahedronGeometry args={[0.15, 0]} />
         <meshStandardMaterial color={COLOR.backpack} flatShading />
       </mesh>
-      {/* front pocket, carry handle, shoulder straps on the back */}
+      {/* pocket, handle, straps */}
       <mesh position={[0, 0.14, 0.1]} castShadow>
         <boxGeometry args={[0.22, 0.16, 0.05]} />
         <meshStandardMaterial color={COLOR.backpackTrim} flatShading />

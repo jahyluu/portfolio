@@ -16,20 +16,17 @@ import { EAST, Flat, LEVEL, NIGHT, NightMaterial, PARK_SOUTH, glowTexture, rainH
 import { GLOW } from './palette'
 import { seeded } from './primitives'
 
-// the park across the street from the window: a small river winding through it with
-// stone banks, a sandy gravel trail following it, big branching cherry trees arching
-// over the water, petals falling and floating downstream, ducks, benches and warm
-// lamps. things are a little oversized so they read from the cafe.
-// (people will come later)
+// park across the street: river, trails, cherry trees, petals, ducks, benches, lamps.
+// everything's a bit oversized so it reads from inside.
+// TODO: people
 
-const PARK_BACK = 29 // a hedge runs across here; the river slips out through a gap in it
-const GROUND_END = 36 // grass carries on past the hedge, under the river
-const WATER_Y = LEVEL.walk + 0.004 // level with the grass, rocks hide the edges
+const PARK_BACK = 29 // hedge line, river exits through a gap
+const GROUND_END = 36 // grass continues past the hedge
+const WATER_Y = LEVEL.walk + 0.004 // rocks cover the edges
 const TRAIL_Y = LEVEL.walk + 0.003
 
-// --- the river's course, north to east (x, z). it enters at the park's north edge,
-// winds south, bends east and runs into the hedge. everything along it (banks, trail,
-// trees, benches, ducks) is placed from this line
+// --- river centerline (x, z), north to east. banks, trails, trees, benches and ducks
+// are all placed relative to this
 const COURSE: [x: number, z: number][] = [
   [19.2, -20],
   [19.8, -16],
@@ -40,17 +37,15 @@ const COURSE: [x: number, z: number][] = [
   [23.8, -1.0],
   [26.6, -1.8],
   [29.4, -1.4],
-  // past the hedge, fading off into the dark
+  // past the hedge
   [32.5, -1.0],
   [35.5, -1.2],
 ]
-// the trail runs on the river's right side (the street side, then the south side),
-// this far out from the water's edge
+// trail distance from the water, on the river's right side
 const TRAIL = { gap: 0.5, width: 1.4 }
 const SAMPLES = 400
 
-// the course, sampled evenly along its length: center points, the direction to the
-// right of the flow, and the river's half-width (it swells and narrows a little)
+// evenly spaced samples: center, right-hand normal, half-width
 const RIVER = (() => {
   const curve = new CatmullRomCurve3(
     COURSE.map(([x, z]) => new Vector3(x, 0, z)),
@@ -70,8 +65,7 @@ const RIVER = (() => {
   return { points, rights, widths, length: curve.getLength() }
 })()
 
-// a spot along the river: index = how far along (0 to SAMPLES, fractions ok),
-// offset = meters to the right of the center line (negative = left)
+// point along the river. index can be fractional, offset is meters right of center
 function along(index: number, offset: number, target = new Vector3()) {
   const i = Math.min(Math.max(Math.floor(index), 0), SAMPLES - 1)
   const f = Math.min(Math.max(index - i, 0), 1)
@@ -82,12 +76,11 @@ function along(index: number, offset: number, target = new Vector3()) {
   return target
 }
 
-// first sample at or past a z (the north-south stretch) or an x (the eastward stretch)
+// first sample at/after a given z (N-S part) or x (E part)
 const indexAtZ = (z: number) => RIVER.points.findIndex((p) => p.z >= z)
 const indexAtX = (x: number) => RIVER.points.findIndex((p) => p.x >= x)
 const halfWidth = (i: number) => RIVER.widths[Math.round(i)]
 const trailMid = (i: number) => halfWidth(i) + TRAIL.gap + TRAIL.width / 2
-// the trail stops just short of the hedge
 const TRAIL_END = RIVER.points.findIndex((_, i) => along(i, trailMid(i)).x > PARK_BACK - 1.4)
 
 type Tree = { x: number; z: number; lean: Vector3; size: number }
@@ -95,12 +88,11 @@ type Tree = { x: number; z: number; lean: Vector3; size: number }
 const TREES: Tree[] = (() => {
   const trees: Tree[] = []
   const add = (spot: Vector3, lean: Vector3, size: number) => trees.push({ x: spot.x, z: spot.z, lean, size })
-  // street side, between the curb and the trail, leaning out over the trail and water
+  // street side, leaning over the trail
   for (const [z, size] of [[-17, 1.05], [-12.5, 1.15], [-8, 1.0], [-3.5, 1.1]]) {
     add(new Vector3(EAST.park + 0.65, 0, z), new Vector3(1, 0, 0), size)
   }
-  // other bank, just past its path, leaning back over the path and water: along the
-  // north-south stretch, then the eastward stretch
+  // far bank, N-S stretch then E stretch
   for (const [z, size] of [[-15, 1.1], [-10.3, 1.0], [-5.8, 1.15]]) {
     const i = indexAtZ(z)
     add(along(i, -(trailMid(i) + 1.6)), RIVER.rights[i].clone(), size)
@@ -113,37 +105,32 @@ const TREES: Tree[] = (() => {
     const i = indexAtX(x)
     add(along(i, trailMid(i) + 1.6), RIVER.rights[i].clone().negate(), size)
   }
-  // a few standing on their own toward the hedge
+  // a few loners near the hedge
   for (const [x, z, size] of [[27.2, -18.5, 0.85], [27.3, -13, 0.95], [27.0, -8.2, 0.9]]) {
     add(new Vector3(x, 0, z), new Vector3(), size)
   }
   return trees
 })()
 
-// warm lantern posts just past the trail
 const LAMPS = [indexAtZ(-13), indexAtZ(-3.2), indexAtX(25.6)]
-// on the trail's outer edge, facing the water. the last one sits under the middle
-// lantern's light, about a meter along from its post
+// facing the water. last one sits under the middle lamp
 const BENCHES = [indexAtZ(-6), indexAtX(22.8), LAMPS[1] + Math.round((1.0 / RIVER.length) * SAMPLES)]
-// a little arched footbridge over the river, just in front of the hedge
+// footbridge near the hedge
 const BRIDGE = { index: indexAtX(PARK_BACK - 2.1), rise: 0.7, deck: 1.4 }
 
-// a second gravel path on the river's other (left) bank, mirroring the main trail: it
-// comes in at the park's north edge with the river, follows every bend, passes the
-// bridge's far end and stops just short of the hedge. the bridge joins the two trails
+// trail on the left bank, mirrors the main one. the bridge connects them
 const LEFT_PATH = {
   from: 0,
   to: RIVER.points.findIndex((_, i) => along(i, -trailMid(i)).x > PARK_BACK - 1.4),
 }
-// swimming: drift back and forth along the river around a spot. offset = meters
-// right of center, range = how many samples each way
+// swimmers: drift back and forth. range is in samples
 const SWIMMERS: { kind: DuckKind; index: number; offset: number; range: number; speed: number; phase: number }[] = [
   { kind: 'mallard', index: indexAtZ(-8), offset: -0.6, range: 22, speed: 0.08, phase: 0 },
   { kind: 'white', index: indexAtZ(-4.6), offset: 0.5, range: 16, speed: 0.1, phase: 2 },
   { kind: 'brown', index: indexAtZ(-13), offset: 0.2, range: 26, speed: 0.06, phase: 4 },
   { kind: 'mallard', index: indexAtX(23), offset: -0.3, range: 14, speed: 0.09, phase: 1 },
 ]
-// standing on the far bank's rocks, looking at the water
+// standing on the far bank
 const STANDERS: { kind: DuckKind; index: number }[] = [
   { kind: 'brown', index: indexAtZ(-3.4) },
   { kind: 'white', index: indexAtZ(-3.4) + 7 },
@@ -162,7 +149,7 @@ export function Park() {
       <FloatingPetals />
       <Ducks />
       {BENCHES.map((i) => {
-        // trail's outer edge, turned so the seat faces back toward the water (-right)
+        // face the water
         const spot = along(i, halfWidth(i) + TRAIL.gap + TRAIL.width + 0.25)
         const right = RIVER.rights[i]
         return <Bench key={i} x={spot.x} z={spot.z} facing={Math.atan2(-right.x, -right.z)} />
@@ -176,10 +163,9 @@ export function Park() {
   )
 }
 
-// --- the cherry trees, grown from a simple branching recipe.
-// a trunk splits into 3 limbs, each limb into 2-3 branches, each of those into 2-3
-// twigs. every split leans out along `lean` (toward the river) and up, so the crowns
-// are wide at the top and arch over the water. blossom clusters sit at the ends
+// --- cherry trees
+// trunk -> 3 limbs -> 2-3 branches -> 2-3 twigs, each split leaning toward `lean`
+// (the river) and up. blossoms at the tips
 
 type Branch = { from: Vector3; to: Vector3; radius: number }
 type Bloom = { position: Vector3; radius: number; color: number; spin: number }
@@ -203,7 +189,7 @@ function growCherry(base: Vector3, lean: Vector3, size: number, seed: number) {
     }
     if (depth === 3) return
     const children = depth === 0 ? 3 : rand() > 0.45 ? 3 : 2
-    // two directions at right angles to this branch, to splay the children around it
+    // basis perpendicular to the branch for splaying children
     const side = Math.abs(dir.y) < 0.9 ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0)
     const p1 = new Vector3().crossVectors(dir, side).normalize()
     const p2 = new Vector3().crossVectors(dir, p1).normalize()
@@ -215,7 +201,7 @@ function growCherry(base: Vector3, lean: Vector3, size: number, seed: number) {
         .addScaledVector(p1, Math.cos(angle) * spread)
         .addScaledVector(p2, Math.sin(angle) * spread)
         .addScaledVector(lean, 0.35)
-      // outer twigs may droop a touch, everything else keeps reaching up
+      // only the last level can droop
       child.y = Math.max(child.y, depth === 2 ? -0.05 : 0.15)
       child.normalize()
       grow(to, child, length * (0.66 + rand() * 0.12), radius * 0.6, depth + 1)
@@ -226,13 +212,13 @@ function growCherry(base: Vector3, lean: Vector3, size: number, seed: number) {
   return { branches, blooms }
 }
 
-// the whole grove is grown once, when the page loads
+// generated once at load
 const GROVE = (() => {
   const trees = TREES.map((t, i) => growCherry(new Vector3(t.x, LEVEL.walk, t.z), t.lean, t.size, i + 1))
   return { branches: trees.flatMap((t) => t.branches), blooms: trees.flatMap((t) => t.blooms) }
 })()
 
-// every branch and every blossom cluster in the park: two draw calls total
+// two instanced meshes for all branches + blossoms
 function CherryTrees() {
   const branchMesh = useRef<InstancedMesh>(null!)
   const bloomMesh = useRef<InstancedMesh>(null!)
@@ -266,12 +252,12 @@ function CherryTrees() {
     if (bloomMesh.current.instanceColor) bloomMesh.current.instanceColor.needsUpdate = true
     branchMesh.current.computeBoundingSphere()
     bloomMesh.current.computeBoundingSphere()
-    // re-run whenever the grove is regrown (new shape or new colors), not just on first load
+    // depend on GROVE so HMR picks up shape/color changes
   }, [GROVE])
 
   return (
     <group>
-      {/* unit-height cylinder, a bit thinner at the top, stretched per branch */}
+      {/* unit cylinder, tapered, scaled per branch */}
       <instancedMesh key={`b${GROVE.branches.length}`} ref={branchMesh} args={[undefined, undefined, GROVE.branches.length]}>
         <cylinderGeometry args={[0.65, 1, 1, 6]} />
         <NightMaterial color={NIGHT.bark} />
@@ -286,7 +272,7 @@ function CherryTrees() {
 
 const FALLING_PETALS = 260
 
-// petals drifting down out of the crowns, swaying and tumbling, onto the grass or water
+// falling petals
 function FallingPetals() {
   const mesh = useRef<InstancedMesh>(null!)
   const dummy = useMemo(() => new Object3D(), [])
@@ -296,7 +282,7 @@ function FallingPetals() {
         const bloom = GROVE.blooms[(i * 7) % GROVE.blooms.length]
         const x = bloom.position.x + (seeded(i + 500) - 0.5) * 0.8
         const z = bloom.position.z + (seeded(i + 600) - 0.5) * 0.8
-        // close enough to the river's center line = lands on the water
+        // near the centerline = landed in the water
         const nearest = RIVER.points.reduce((best, p) => Math.min(best, Math.hypot(p.x - x, p.z - z)), Infinity)
         const overWater = nearest < 1.9
         return {
@@ -333,7 +319,7 @@ function FallingPetals() {
 
 const FLOATING_PETALS = 180
 
-// petals that landed on the river, drifting slowly downstream and starting over upstream
+// floating petals, loop back upstream
 function FloatingPetals() {
   const mesh = useRef<InstancedMesh>(null!)
   const dummy = useMemo(() => new Object3D(), [])
@@ -341,8 +327,8 @@ function FloatingPetals() {
     () =>
       Array.from({ length: FLOATING_PETALS }, (_, i) => ({
         start: seeded(i + 1000) * SAMPLES,
-        side: (seeded(i + 900) - 0.5) * 1.7, // fraction of the half-width, -0.85 to 0.85
-        speed: ((0.08 + seeded(i + 1100) * 0.08) / RIVER.length) * SAMPLES, // samples per second
+        side: (seeded(i + 900) - 0.5) * 1.7, // fraction of half-width
+        speed: ((0.08 + seeded(i + 1100) * 0.08) / RIVER.length) * SAMPLES, // samples/sec
         spin: seeded(i + 1200) * 6,
       })),
     [],
@@ -369,8 +355,7 @@ function FloatingPetals() {
   )
 }
 
-// a flat strip following the river, from offset `from(i)` to `to(i)` (meters right of
-// center) at each sample, between samples start and end
+// flat strip along the river between offsets from(i) and to(i)
 function ribbon(from: (i: number) => number, to: (i: number) => number, y: number, start = 0, end = SAMPLES) {
   const positions: number[] = []
   const indices: number[] = []
@@ -402,7 +387,7 @@ function Grounds() {
   return (
     <group>
       <Flat position={[(park + GROUND_END) / 2, LEVEL.walk - 0.1, (zFrom + PARK_SOUTH) / 2]} size={[GROUND_END - park, 0.2, PARK_SOUTH - zFrom]} color={NIGHT.grass} />
-      {/* sandy gravel trails along both banks; the bridge joins them */}
+      {/* trails */}
       <mesh geometry={trail}>
         <meshBasicMaterial color={NIGHT.trail} side={DoubleSide} fog={false} />
       </mesh>
@@ -422,8 +407,7 @@ function River() {
   )
 }
 
-// stones covering both banks: two staggered rows of chunky rocks along each edge,
-// one sitting in the water's edge and one on the grass, so no seam shows
+// two staggered rows of rocks per bank to hide the water/grass seam
 function BankRocks() {
   const mesh = useRef<InstancedMesh>(null!)
   const rocks = useMemo(() => {
@@ -467,9 +451,7 @@ function BankRocks() {
   )
 }
 
-// every raindrop that lands on the river makes a ring that spreads and fades over
-// RIPPLE_LIFE seconds. the number of rings alive at once = drops landing on the river
-// per second x how long each lasts, so they always match the rain (capped for speed)
+// rain ripples. count = drops/sec on the river area * RIPPLE_LIFE, capped for perf
 const RIPPLE_LIFE = 1.4
 const RIVER_AREA = RIVER.length * 2 * (RIVER.widths.reduce((sum, w) => sum + w, 0) / RIVER.widths.length)
 const RIPPLES = Math.min(Math.round(rainHitsPerSquareMeter() * RIVER_AREA * RIPPLE_LIFE), 900)
@@ -486,16 +468,16 @@ function Ripples() {
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
     for (let i = 0; i < RIPPLES; i++) {
-      // staggered so drops keep landing steadily instead of all at once
+      // stagger start times
       const cycle = t / RIPPLE_LIFE + i / RIPPLES
       const life = cycle % 1
-      // each new drop lands somewhere new on the water
+      // new spot each cycle
       const n = Math.floor(cycle) * 7919 + i * 31
       const index = seeded(n + 1) * SAMPLES
       along(index, (seeded(n) - 0.5) * 1.8 * halfWidth(index), dummy.position)
       dummy.position.y = WATER_Y + 0.002
       dummy.rotation.set(-Math.PI / 2, 0, 0)
-      // mostly small rings, now and then a bigger drop
+      // mostly small, occasionally big
       const size = seeded(n + 2) > 0.85 ? 0.3 : 0.16
       dummy.scale.setScalar(0.02 + life * size)
       dummy.updateMatrix()
@@ -521,9 +503,7 @@ const DUCK_COLORS: Record<DuckKind, { body: string; head: string }> = {
   brown: { body: '#6e5640', head: '#5a4533' },
 }
 
-// a light scatter of chunky gravel on both trails, big enough to read as texture from
-// the cafe. lighter than the trail so it stands out. few stones, and they never move,
-// so it's cheap
+// gravel on the trails, slightly lighter than the trail color. static so it's cheap
 const GRAVEL = { main: 900, left: 650, size: [0.015, 0.03] }
 
 function Gravel() {
@@ -548,7 +528,7 @@ function Gravel() {
       dummy.scale.set(r, r * 0.6, r)
       dummy.updateMatrix()
       mesh.current.setMatrixAt(k, dummy.matrix)
-      // random rather than in turn, so no pattern shows along the trail
+      // random pick to avoid visible patterns
       mesh.current.setColorAt(k, color.set(NIGHT.gravel[Math.floor(seeded(k + 2500) * NIGHT.gravel.length)]))
     }
     mesh.current.instanceMatrix.needsUpdate = true
@@ -564,7 +544,7 @@ function Gravel() {
   )
 }
 
-// swimmers drift slowly back and forth along the river; two more stand on the far bank
+// ducks
 function Ducks() {
   const swimmers = useRef<Group[]>([])
 
@@ -577,7 +557,7 @@ function Ducks() {
       const here = Math.min(Math.max(index + Math.sin(a) * range, 0), SAMPLES)
       along(here, offset + Math.sin(t * 0.3 + phase) * 0.2, duck.position)
       duck.position.y = WATER_Y + Math.sin(t * 2 + i) * 0.008
-      // face the way it's swimming along the river (the model faces +x)
+      // model faces +x
       const right = RIVER.rights[Math.round(here)]
       const forward = Math.sign(Math.cos(a)) || 1
       duck.rotation.y = Math.atan2(right.x * forward, right.z * forward)
@@ -597,7 +577,7 @@ function Ducks() {
         </group>
       ))}
       {STANDERS.map(({ kind, index }) => {
-        // on the rocks at the water's edge (left bank), facing the river
+        // on the left bank rocks
         const spot = along(index, -(halfWidth(index) + 0.05))
         const right = RIVER.rights[index]
         return (
@@ -610,10 +590,8 @@ function Ducks() {
   )
 }
 
-// faces +x: body, tail tipped up at the back, head and beak at the front.
-// standing ducks get orange legs, sit higher, and idle: they look around, now and then
-// dip down to peck, shuffle a little, breathe and wag their tail. phase keeps two
-// ducks from moving in sync
+// faces +x. standing ducks get legs and an idle (look around, peck, shuffle, tail wag).
+// phase offsets them so they don't move in sync
 function Duck({ kind, standing = false, phase = 0 }: { kind: DuckKind; standing?: boolean; phase?: number }) {
   const { body, head } = DUCK_COLORS[kind]
   const lift = standing ? 0.1 : 0
@@ -625,17 +603,17 @@ function Duck({ kind, standing = false, phase = 0 }: { kind: DuckKind; standing?
   useFrame(({ clock }) => {
     if (!standing) return
     const t = clock.elapsedTime + phase
-    // looking around, with pauses between turns
+    // look around
     neck.current.rotation.y = 0.55 * Math.sin(Math.sin(t * 0.45) * 1.8)
-    // a quick peck every 7 seconds: dip forward, then back up
+    // peck every 7s
     const peck = (t % 7) / 7
     const dip = peck > 0.82 && peck < 0.94 ? Math.sin(((peck - 0.82) / 0.12) * Math.PI) : 0
     neck.current.rotation.z = -dip * 0.9
-    // shuffling its feet: a slow small turn back and forth
+    // shuffle
     whole.current.rotation.y = Math.sin(t * 0.22) * 0.25
     // breathing
     chest.current.scale.y = 1 + Math.sin(t * 2.2) * 0.03
-    // tail wag every few seconds
+    // tail wag
     const wag = (t % 5) / 5
     tail.current.rotation.y = wag > 0.9 ? Math.sin((wag - 0.9) * 10 * Math.PI * 3) * 0.4 : 0
   })
@@ -661,7 +639,7 @@ function Duck({ kind, standing = false, phase = 0 }: { kind: DuckKind; standing?
           <NightMaterial color={body} />
         </mesh>
       </group>
-      {/* head and beak pivot together at the neck */}
+      {/* head pivots at the neck */}
       <group ref={neck} position={[0.12, 0.14 + lift, 0]}>
         <mesh position={[0.03, 0.06, 0]}>
           <icosahedronGeometry args={[0.065, 0]} />
@@ -676,7 +654,7 @@ function Duck({ kind, standing = false, phase = 0 }: { kind: DuckKind; standing?
   )
 }
 
-// wooden slat bench, built facing +z and turned by `facing` (radians around y)
+// slat bench, faces +z before `facing` is applied
 function Bench({ x, z, facing }: { x: number; z: number; facing: number }) {
   return (
     <group position={[x, LEVEL.walk, z]} rotation={[0, facing, 0]}>
@@ -710,15 +688,13 @@ function Bench({ x, z, facing }: { x: number; z: number; facing: number }) {
 
 const BRIDGE_PLANKS = 14
 
-// a little wooden footbridge arching over the river: plank deck on a gentle curve,
-// vermilion posts and rails on both sides, stone footings on each bank.
-// built along local x (bank to bank), then turned to cross the river
+// arched footbridge. built along local x, then rotated across the river
 function Bridge() {
   const { index, rise, deck } = BRIDGE
   const center = along(index, 0)
   const right = RIVER.rights[index]
-  const span = 2 * halfWidth(index) + 1.6 // a bit past both banks
-  // height of the deck at a point along the span (0 at the ends, `rise` in the middle)
+  const span = 2 * halfWidth(index) + 1.6
+  // deck height along the span, 0 at ends and `rise` in the middle
   const heightAt = (x: number) => rise * (1 - ((2 * x) / span) ** 2)
   const slopeAt = (x: number) => (-8 * rise * x) / (span * span)
   const step = span / BRIDGE_PLANKS
@@ -726,21 +702,21 @@ function Bridge() {
   const posts = Array.from({ length: BRIDGE_PLANKS / 2 + 1 }, (_, k) => -span / 2 + step * 2 * k)
   return (
     <group position={[center.x, LEVEL.walk, center.z]} rotation={[0, Math.atan2(-right.z, right.x), 0]}>
-      {/* stone footings on each bank */}
+      {/* footings */}
       {[-1, 1].map((end) => (
         <mesh key={end} position={[(end * span) / 2, 0.06, 0]}>
           <boxGeometry args={[0.6, 0.2, deck + 0.3]} />
           <NightMaterial color={NIGHT.rocks[0]} />
         </mesh>
       ))}
-      {/* the deck: short planks, each tilted to follow the curve */}
+      {/* deck planks follow the curve */}
       {planks.map((x) => (
         <mesh key={x} position={[x, heightAt(x) + 0.1, 0]} rotation={[0, 0, Math.atan(slopeAt(x))]}>
           <boxGeometry args={[step * 1.04, 0.07, deck]} />
           <NightMaterial color={NIGHT.wood} />
         </mesh>
       ))}
-      {/* the arch beams under the deck, one each side */}
+      {/* arch beams */}
       {[-1, 1].flatMap((side) =>
         planks.map((x) => (
           <mesh key={`${side}${x}`} position={[x, heightAt(x) + 0.0, (side * deck) / 2 - side * 0.08]} rotation={[0, 0, Math.atan(slopeAt(x))]}>
@@ -749,7 +725,7 @@ function Bridge() {
           </mesh>
         )),
       )}
-      {/* vermilion posts, and a rail that follows the curve */}
+      {/* posts + rail */}
       {[-1, 1].flatMap((side) => [
         ...posts.map((x) => (
           <mesh key={`p${side}${x}`} position={[x, heightAt(x) + 0.42, (side * deck) / 2]}>
@@ -768,7 +744,7 @@ function Bridge() {
   )
 }
 
-// short warm lantern post just past the trail, with a pool of light on it
+// lamp post + light pool
 function ParkLamp({ index }: { index: number }) {
   const spot = along(index, halfWidth(index) + TRAIL.gap + TRAIL.width + 0.5)
   const glow = useMemo(() => glowTexture(), [])

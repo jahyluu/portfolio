@@ -3,31 +3,29 @@ import type { SpotLight } from 'three'
 import { DOWNLIGHTS, MY_SCREEN, PENDANT, type Vec3 } from './layout'
 import { COLOR } from './palette'
 
-// one knob for the whole room. raise it if everything reads too dark on your screen
+// master brightness, bump up if the room looks too dark
 export const BRIGHTNESS = 1
 
-// soft late-afternoon feel: a warm, even base so nothing is murky, with gentle
-// pools on top. my pendant is still the brightest spot, the window the only cool light
+// warm even base + pools from the downlights. my table is the brightest spot,
+// the window is the only cool light
 export function Lighting() {
   const [px, py, pz] = PENDANT.position
   const [sx, sy, sz] = MY_SCREEN.center
   const [nx, ny, nz] = MY_SCREEN.normal
   return (
     <>
-      {/* warm wash over the whole room: light from above, wood bounce from below */}
+      {/* sky/ground fill, ground color fakes bounce off the wood floor */}
       <hemisphereLight args={[COLOR.skyFill, COLOR.groundFill, 0.9 * BRIGHTNESS]} />
       <ambientLight intensity={0.15 * BRIGHTNESS} color={COLOR.warmLight} />
 
-      {/* hero pendant: brightest pool in the room */}
+      {/* over my table, no fixture */}
       <Spot position={[px, py - 0.08, pz]} intensity={16} angle={0.85} shadows />
-      {/* spill so the shade and the ceiling above it aren't black */}
-      <pointLight position={PENDANT.position} color={COLOR.warmLight} intensity={0.6 * BRIGHTNESS} distance={2.5} decay={2} />
 
       {DOWNLIGHTS.map((light, i) => (
         <Spot key={i} position={light.position} intensity={light.intensity * 1.4} shadows={light.shadows} />
       ))}
 
-      {/* night coming in through the window (east wall) */}
+      {/* moonlight through the east window */}
       <directionalLight position={[10, 4, 0.3]} color={COLOR.nightLight} intensity={0.25 * BRIGHTNESS} />
 
       {/* screen glow on my face */}
@@ -44,13 +42,13 @@ export function Lighting() {
 
 type SpotProps = { position: Vec3; intensity: number; angle?: number; penumbra?: number; shadows?: boolean }
 
-// warm cone pointing straight down. fully soft edge so pools blend into the room
-export function Spot({ position, intensity, angle = 0.8, penumbra = 1, shadows = false }: SpotProps) {
+// straight-down spot, penumbra 1 so the edge blends out
+function Spot({ position, intensity, angle = 0.8, penumbra = 1, shadows = false }: SpotProps) {
   const light = useRef<SpotLight>(null!)
   const [x, , z] = position
 
   useLayoutEffect(() => {
-    // spotlights aim at a target object. put it on the floor right below
+    // target goes on the floor directly below
     light.current.target.position.set(x, 0, z)
     light.current.target.updateMatrixWorld()
   }, [x, z])

@@ -1,4 +1,5 @@
-// opening shot overlay. fades out on scroll (global.css). skip comes with the desktop
+// name/title over the opening shot, fades out on scroll (see global.css)
+// TODO: skip button once the desktop exists
 export function HeroOverlay() {
   return (
     <>

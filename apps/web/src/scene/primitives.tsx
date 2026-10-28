@@ -3,7 +3,7 @@ import { COLOR } from './palette'
 
 type BoxProps = { position: Vec3; size: Vec3; color: string; castShadow?: boolean; roughness?: number }
 
-// positioned from center. walls/ceiling pass castShadow={false} to save work
+// centered on position. pass castShadow={false} for big static stuff like walls
 export function Box({ position, size, color, castShadow = true, roughness = 1 }: BoxProps) {
   return (
     <mesh position={position} castShadow={castShadow} receiveShadow>
@@ -15,14 +15,14 @@ export function Box({ position, size, color, castShadow = true, roughness = 1 }:
 
 type CylinderProps = {
   position: Vec3
-  // one number, or [top, bottom] for a tapered one
+  // [top, bottom] for a taper
   radius: number | [top: number, bottom: number]
   height: number
   color: string
   segments?: number
   rotation?: Vec3
   castShadow?: boolean
-  roughness?: number // lower = shinier. glass and glazed ceramic ~0.25
+  roughness?: number // ~0.25 for glass / glazed ceramic
 }
 
 export function Cylinder({
@@ -44,18 +44,18 @@ export function Cylinder({
   )
 }
 
-// see-through glass for the pastry case, blender jar
+// pastry case, blender jar
 export function GlassMaterial() {
   return <meshStandardMaterial color={COLOR.glass} transparent opacity={0.2} roughness={0.05} depthWrite={false} />
 }
 
-// pseudo-random 0-1 from a number. same result every load, so the scene never reshuffles
+// deterministic pseudo-random 0-1, so the layout is the same every load
 export function seeded(n: number) {
   const x = Math.sin(n * 12.9898) * 43758.5453
   return x - Math.floor(x)
 }
 
-// a wooden cafe chair, seat facing +z, back at -z
+// seat faces +z
 export function Chair() {
   return (
     <>

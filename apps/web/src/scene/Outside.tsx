@@ -6,11 +6,10 @@ import { GLOW } from './palette'
 import { Park } from './Park'
 import { seeded } from './primitives'
 
-// the rainy night outside: a narrow street past the window with a park across it
-// (Park.tsx), and a street past the door that runs on along the park's south edge,
-// lined with shops. the two streets meet at a corner. shared pieces are in OutsideKit
+// streets, shops, bus stop, skyline and rain. the park is in Park.tsx,
+// shared helpers in OutsideKit.ts
 
-// a little bus stop on the strip between the street and the park, facing the street
+// faces the street
 const BUS_STOP = { x: 13.8, z: 4.2 }
 
 export function Outside() {
@@ -30,18 +29,17 @@ export function Outside() {
 function Streets() {
   const { walk, road, zFrom } = EAST
   const slab = 0.2
-  const corner = SOUTH.walk.to // sidewalks and curbs along the east street stop here
+  const corner = SOUTH.walk.to // east sidewalk/curb end
   const curbHeight = LEVEL.walk - LEVEL.road + 0.1
   const curbY = (LEVEL.walk + LEVEL.road - 0.1) / 2
   const southX = (SOUTH.xFrom + SOUTH.xTo) / 2
   const southWidth = SOUTH.xTo - SOUTH.xFrom
   const walkX = (walk.from + walk.to) / 2
   const walkWidth = walk.to - walk.from
-  const eastRoadTo = SOUTH.road.from // the east street ends at the south street
+  const eastRoadTo = SOUTH.road.from // where the east street meets the south one
   return (
     <group>
-      {/* east: sidewalk along the cafe with a joint every meter, curb, the narrow
-          street with white edge lines, then the curb at the park */}
+      {/* east street: sidewalk, curb, road, park curb */}
       <Flat position={[walkX, LEVEL.walk - slab / 2, (zFrom + corner) / 2]} size={[walkWidth, slab, corner - zFrom]} color={NIGHT.walk} />
       {Array.from({ length: Math.floor(corner - zFrom) }, (_, k) => (
         <Flat key={k} position={[walkX, LEVEL.walk + 0.001, zFrom + k + 1]} size={[walkWidth, 0.004, 0.02]} color={NIGHT.joint} />
@@ -53,7 +51,7 @@ function Streets() {
       ))}
       <Flat position={[(road.to + EAST.park) / 2, curbY, (zFrom + corner) / 2]} size={[EAST.park - road.to, curbHeight, corner - zFrom]} color={NIGHT.curb} />
 
-      {/* south: sidewalk outside the door, and one along the park's edge */}
+      {/* south sidewalks */}
       <Flat
         position={[(SOUTH.xFrom + walk.from) / 2, LEVEL.walk - slab / 2, (SOUTH.walk.from + corner) / 2]}
         size={[walk.from - SOUTH.xFrom, slab, corner - SOUTH.walk.from]}
@@ -64,10 +62,10 @@ function Streets() {
         size={[SOUTH.xTo - EAST.park, slab, corner - PARK_SOUTH]}
         color={NIGHT.walk}
       />
-      {/* near curb, with a gap where the east street joins */}
+      {/* near curb, gap where the east street joins */}
       <Flat position={[(SOUTH.xFrom + road.from) / 2, curbY, (corner + SOUTH.road.from) / 2]} size={[road.from - SOUTH.xFrom, curbHeight, SOUTH.road.from - corner]} color={NIGHT.curb} />
       <Flat position={[(road.to + SOUTH.xTo) / 2, curbY, (corner + SOUTH.road.from) / 2]} size={[SOUTH.xTo - road.to, curbHeight, SOUTH.road.from - corner]} color={NIGHT.curb} />
-      {/* the street, far curb and far sidewalk, all the way along */}
+      {/* road, far curb, far sidewalk */}
       <Flat position={[southX, LEVEL.road - slab / 2, (SOUTH.road.from + SOUTH.road.to) / 2]} size={[southWidth, slab, SOUTH.road.to - SOUTH.road.from]} color={NIGHT.road} />
       <Flat position={[southX, curbY, (SOUTH.road.to + SOUTH.farWalk.from) / 2]} size={[southWidth, curbHeight, SOUTH.farWalk.from - SOUTH.road.to]} color={NIGHT.curb} />
       <Flat
@@ -79,8 +77,7 @@ function Streets() {
   )
 }
 
-// shops across the south street, west to east. the bright one at x 0-4 is straight
-// across from the door; the rest run on past the park
+// west to east. the bright one (x 0-4) is across from the door
 const SOUTH_SHOPS: { from: number; to: number; kind: 'shutter' | 'warm' | 'bright'; awning?: string }[] = [
   { from: -8, to: -4, kind: 'shutter' },
   { from: -4, to: 0, kind: 'warm', awning: '#7a2e2a' },
@@ -114,7 +111,7 @@ function SouthShops() {
               </>
             ) : (
               <>
-                {/* dark frame, the lit shop window in front of it */}
+                {/* frame + lit window */}
                 <Flat position={[x, LEVEL.walk + 1.4, face - 0.01]} size={[width - 0.6, 2.4, 0.02]} color={NIGHT.frame} />
                 <Flat
                   position={[x, LEVEL.walk + 1.4, face - 0.025]}
@@ -123,9 +120,9 @@ function SouthShops() {
                 />
               </>
             )}
-            {/* awning, tilted down toward the street */}
+            {/* awning */}
             {awning && <Flat position={[x, LEVEL.walk + 2.85, face - 0.45]} size={[width - 0.4, 0.04, 0.9]} rotation={[-0.3, 0, 0]} color={awning} />}
-            {/* apartment windows upstairs */}
+            {/* upstairs windows */}
             {[x - width / 4, x + width / 4].map((wx, col) => {
               const r = seeded(i * 13 + col + 90)
               const color = r < 0.35 ? NIGHT.windowWarm : r < 0.5 ? NIGHT.windowCool : NIGHT.windowDark
@@ -138,8 +135,7 @@ function SouthShops() {
   )
 }
 
-// wooden-style utility poles along the sidewalk, wires sagging between them
-// (none straight in front of the window, where one would read as a stray post)
+// utility poles + wires. skipped in front of the window, looked like a random post
 const POLE = { x: 7.55, height: 7.5, z: [-16, -9, 5.4] }
 
 function UtilityPoles() {
@@ -165,7 +161,7 @@ function UtilityPoles() {
           <Flat position={[POLE.x, armY, z]} size={[1.2, 0.1, 0.1]} color={NIGHT.pole} />
         </group>
       ))}
-      {/* transformer can on the middle pole */}
+      {/* transformer */}
       <Flat position={[POLE.x - 0.25, armY - 0.9, POLE.z[1]]} size={[0.3, 0.5, 0.3]} color={NIGHT.metal} />
       {wires.map((curve, i) => (
         <mesh key={i}>
@@ -177,10 +173,8 @@ function UtilityPoles() {
   )
 }
 
-// a small, open wooden shelter: four posts, a sloped tin roof, a bench and a low back
-// rail, with a warm light under the roof. open on all sides so it doesn't wall off
-// the park behind it. a round stop sign stands beside it on its north side.
-// built facing +z, turned to face the street (-x)
+// open shelter so it doesn't block the park behind it. built facing +z,
+// rotated to face the street (-x)
 function BusStop() {
   const glow = useMemo(() => glowTexture(), [])
   const posts: [number, number][] = [
@@ -197,7 +191,7 @@ function BusStop() {
           <NightMaterial color={NIGHT.wood} />
         </mesh>
       ))}
-      {/* roof, higher at the front, with a trim board along its front edge */}
+      {/* sloped roof + front trim */}
       <mesh position={[0, 2.06, 0.05]} rotation={[0.12, 0, 0]}>
         <boxGeometry args={[1.9, 0.05, 1.15]} />
         <NightMaterial color={NIGHT.busRoof} />
@@ -206,7 +200,7 @@ function BusStop() {
         <boxGeometry args={[1.9, 0.12, 0.04]} />
         <NightMaterial color={NIGHT.wood} />
       </mesh>
-      {/* bench and back rail */}
+      {/* bench */}
       <mesh position={[0, 0.45, -0.15]}>
         <boxGeometry args={[1.3, 0.04, 0.32]} />
         <NightMaterial color={NIGHT.wood} />
@@ -223,7 +217,7 @@ function BusStop() {
           <NightMaterial color={NIGHT.wood} />
         </mesh>
       ))}
-      {/* the warm light under the roof, and its pool on the ground */}
+      {/* light + ground pool */}
       <mesh position={[0, 1.97, 0]}>
         <boxGeometry args={[0.18, 0.05, 0.1]} />
         <meshBasicMaterial color={GLOW.bulb} fog={false} />
@@ -232,8 +226,8 @@ function BusStop() {
         <planeGeometry args={[2.8, 2.8]} />
         <meshBasicMaterial map={glow} color={NIGHT.warmLight} transparent opacity={0.3} blending={AdditiveBlending} depthWrite={false} fog={false} />
       </mesh>
-      {/* stop sign: pole, round sign with a pale band, a timetable board below */}
-      {/* clear of the roof's edge (it reaches 0.95 out) */}
+      {/* stop sign + timetable */}
+      {/* roof sticks out 0.95, keep the pole clear of it */}
       <group position={[-1.35, 0, 0.45]}>
         <mesh position={[0, 1.05, 0]}>
           <cylinderGeometry args={[0.03, 0.03, 2.1, 6]} />
@@ -257,14 +251,11 @@ function BusStop() {
   )
 }
 
-// a black front-view bus on the timetable board, so it reads as a bus stop: body,
-// destination strip, two-pane windshield, headlights, mirrors, bumper and wheels.
-// the light parts are the board's own color, like cutouts. faces +z like the board
+// bus icon on the timetable board. light parts use the board color so they look cut out
 function BusIcon({ position }: { position: [number, number, number] }) {
   const cutout = NIGHT.label
   return (
     <group position={position}>
-      {/* body, bumper, wheels, mirrors */}
       <mesh position={[0, 0.005, 0]}>
         <boxGeometry args={[0.13, 0.14, 0.006]} />
         <NightMaterial color={NIGHT.busIcon} />
@@ -285,7 +276,7 @@ function BusIcon({ position }: { position: [number, number, number] }) {
           <NightMaterial color={NIGHT.busIcon} />
         </mesh>
       ))}
-      {/* destination strip, windshield panes, headlights */}
+      {/* cutouts */}
       <mesh position={[0, 0.054, 0.004]}>
         <boxGeometry args={[0.09, 0.016, 0.004]} />
         <NightMaterial color={cutout} />
@@ -306,7 +297,7 @@ function BusIcon({ position }: { position: [number, number, number] }) {
   )
 }
 
-// a row of distant buildings past the park, so the view ends in a city, not a void
+// distant buildings so the view doesn't just end
 function Skyline() {
   const x = 42
   const blocks = Array.from({ length: 11 }, (_, i) => ({ z: -28 + i * 5, height: 9 + seeded(i + 200) * 14 }))
@@ -328,7 +319,7 @@ function Skyline() {
   )
 }
 
-// --- falling rain (how heavy it is: RAIN_ZONES in OutsideKit)
+// --- rain (amount is RAIN_ZONES in OutsideKit)
 function makeDrops() {
   const total = RAIN_ZONES.reduce((n, zone) => n + zone.count, 0)
   const x = new Float32Array(total)
@@ -347,8 +338,7 @@ function makeDrops() {
   return { x, y, z, speed }
 }
 
-// one instanced mesh for every streak. each frame only their heights change, written
-// straight into the instance matrices
+// one instanced mesh. only y changes per frame, written straight into the matrix array
 function Rain() {
   const mesh = useRef<InstancedMesh>(null!)
   const drops = useMemo(() => makeDrops(), [])
@@ -363,20 +353,20 @@ function Rain() {
   }, [drops, count])
 
   useFrame((_, delta) => {
-    const step = Math.min(delta, 0.1) // don't jump after a hidden tab comes back
+    const step = Math.min(delta, 0.1) // avoid a jump when the tab regains focus
     const span = RAIN.top - RAIN.bottom
     const matrices = mesh.current.instanceMatrix.array
     for (let i = 0; i < count; i++) {
       let y = drops.y[i] - drops.speed[i] * step
       if (y < RAIN.bottom) y += span
       drops.y[i] = y
-      matrices[i * 16 + 13] = y // the y of the translation
+      matrices[i * 16 + 13] = y // translation y
     }
     mesh.current.instanceMatrix.needsUpdate = true
   })
 
   return (
-    // keyed by count: a new count remounts the mesh, so the placing above always runs on it
+    // key on count so HMR remounts and re-runs the placement
     <instancedMesh key={count} ref={mesh} args={[undefined, undefined, count]} frustumCulled={false}>
       <boxGeometry args={[0.007, 0.22, 0.007]} />
       <meshBasicMaterial color={NIGHT.rain} transparent opacity={0.4} depthWrite={false} fog={false} />

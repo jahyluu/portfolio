@@ -5,28 +5,27 @@ import { BRIGHTNESS } from './Lighting'
 import { COLOR, GLOW } from './palette'
 import { Box, Cylinder, GlassMaterial, seeded } from './primitives'
 
-// everything on the north wall behind the bar: wood slats, back counter with
-// the coffee gear, lit cup shelves, bottle shelf, menu board, trailing vines
-const WALL = BOUNDS.minZ // plaster face
-const PANEL = WALL + 0.02 // front of the wainscot
+// north wall behind the bar: slats, back counter + coffee gear, shelves, menu, vines
+const WALL = BOUNDS.minZ
+const PANEL = WALL + 0.02 // wainscot face
 const COUNTER_FRONT = PANEL + BAR.backDepth
 const COUNTER_Z = (PANEL + COUNTER_FRONT) / 2
 
-// lit cup shelves cover this stretch of wall. boards = y of each shelf
+// boards = y of each shelf
 const SHELF = { xFrom: 0.6, xTo: 4.2, boards: [1.22, 1.52, 1.82, 2.12], depth: 0.26 }
-// bottles up top, a bit wider than the cup shelves
+// bottle shelf, a bit wider than the cup shelves
 const BOTTLE_SHELF = { xFrom: 0.2, xTo: 4.6, y: 2.32, depth: 0.22 }
 // left of the shelves, over the grinder and cup stacks
-// left of the shelves, over the self-serve station. x = center
+// over the self-serve station. x = center
 const MENU = { x: -0.225, y: 1.65, width: 0.75, height: 0.8 }
-// potted vines on the bottle shelf, trailing down
+// vines on the bottle shelf
 const VINES = [
   { x: 0.3, length: 0.75 },
   { x: 2.4, length: 0.3 },
   { x: 4.45, length: 0.85 },
 ]
 const SLAT_SPACING = 0.1
-// slides all the coffee gear right so it's centered under the lit shelves
+// shifts the coffee gear to center it under the shelves
 const GEAR_OFFSET = 0.55
 
 export function BackWall() {
@@ -43,7 +42,7 @@ export function BackWall() {
   )
 }
 
-// vertical battens from the wainscot up to the ceiling, behind the whole bar
+// vertical slats behind the bar
 function SlatWall() {
   const height = ROOM.height - WAINSCOT_HEIGHT
   const y = WAINSCOT_HEIGHT + height / 2
@@ -51,7 +50,7 @@ function SlatWall() {
   const count = Math.floor(width / SLAT_SPACING)
   return (
     <group>
-      {/* dark backing that shows between the slats */}
+      {/* backing */}
       <Box position={[(BAR.xFrom + BAR.xTo) / 2, y, WALL + 0.005]} size={[width, height, 0.01]} color={COLOR.floorBase} castShadow={false} />
       <Instances limit={count} receiveShadow>
         <boxGeometry args={[0.045, height, 0.03]} />
@@ -77,7 +76,7 @@ function BackCounter() {
     <group>
       <Box position={[x, bodyHeight / 2, COUNTER_Z]} size={[width, bodyHeight, BAR.backDepth]} color={COLOR.barBody} />
       <Box position={[x, BAR.backHeight - 0.02, COUNTER_Z]} size={[width + 0.02, 0.04, BAR.backDepth + 0.02]} color={COLOR.bamboo} />
-      {/* cabinet door seams, facing the barista */}
+      {/* cabinet seams */}
       {Array.from({ length: doors - 1 }, (_, i) => (
         <Box
           key={i}
@@ -97,7 +96,7 @@ function CoffeeGear() {
   const front = COUNTER_FRONT
   return (
     <group position={[GEAR_OFFSET, 0, 0]}>
-      {/* espresso machine: body, top tray, drip tray, two group heads + handles, cups warming on top */}
+      {/* espresso machine */}
       <Box position={[1.6, top + 0.21, z]} size={[0.7, 0.42, 0.48]} color={COLOR.steel} />
       <Box position={[1.6, top + 0.435, z]} size={[0.7, 0.03, 0.48]} color={COLOR.black} />
       <Box position={[1.6, top + 0.015, front - 0.07]} size={[0.6, 0.03, 0.12]} color={COLOR.black} />
@@ -113,16 +112,16 @@ function CoffeeGear() {
       <Cylinder position={[2.05, top + 0.05, front - 0.12]} radius={[0.035, 0.042]} height={0.1} color={COLOR.steel} />
       <Cylinder position={[2.16, top + 0.05, front - 0.22]} radius={[0.035, 0.042]} height={0.1} color={COLOR.steel} />
 
-      {/* grinder: base, bean hopper, lid */}
+      {/* grinder */}
       <Box position={[0.85, top + 0.15, z]} size={[0.18, 0.3, 0.22]} color={COLOR.black} />
       <Cylinder position={[0.85, top + 0.4, z]} radius={[0.085, 0.045]} height={0.2} color={COLOR.beans} />
       <Cylinder position={[0.85, top + 0.51, z]} radius={0.088} height={0.02} color={COLOR.black} />
 
-      {/* drip brewer + carafe */}
+      {/* drip brewer */}
       <Box position={[2.55, top + 0.21, z - 0.04]} size={[0.26, 0.42, 0.3]} color={COLOR.black} />
       <Cylinder position={[2.55, top + 0.07, front - 0.12]} radius={0.07} height={0.14} color={COLOR.coffee} />
 
-      {/* blender: base, glass jar, lid */}
+      {/* blender */}
       <Box position={[3.05, top + 0.06, z]} size={[0.18, 0.12, 0.18]} color={COLOR.black} />
       <mesh position={[3.05, top + 0.26, z]}>
         <cylinderGeometry args={[0.085, 0.06, 0.28, 8]} />
@@ -134,7 +133,7 @@ function CoffeeGear() {
       <Cylinder position={[3.45, top + 0.07, z + 0.05]} radius={[0.06, 0.08]} height={0.14} color={COLOR.steel} />
       <Cylinder position={[3.54, top + 0.12, z + 0.05]} radius={0.008} height={0.18} rotation={[0, 0, -0.9]} color={COLOR.steel} />
 
-      {/* stacks of clean cups */}
+      {/* cup stacks */}
       {[0.25, 0.37, 0.49].flatMap((x) =>
         Array.from({ length: 5 }, (_, i) => (
           <Cylinder key={`${x}-${i}`} position={[x, top + 0.025 + i * 0.045, z]} radius={[0.04, 0.03]} height={0.05} color={COLOR.ceramics[0]} />
@@ -144,15 +143,14 @@ function CoffeeGear() {
   )
 }
 
-// what sits on each lit shelf, bottom to top. x = item center along the wall.
-// kept sparse on purpose, a real back bar has breathing room
+// shelf contents, bottom to top. x = item center. intentionally sparse
 type ShelfItem =
   | { kind: 'syrup'; x: number; color: number }
   | { kind: 'liquor'; x: number; shape: 'round' | 'square' | 'tall'; color: number }
   | { kind: 'jar' | 'utensils' | 'cups' | 'saucers'; x: number }
 
 const SHELF_ITEMS: ShelfItem[][] = [
-  // bottom: syrups with pumps, bean jars, utensils
+  // bottom
   [
     { kind: 'jar', x: 0.78 },
     { kind: 'jar', x: 0.95 },
@@ -170,7 +168,7 @@ const SHELF_ITEMS: ShelfItem[][] = [
     { kind: 'jar', x: 3.82 },
     { kind: 'utensils', x: 4.05 },
   ],
-  // middle: liquor in a few bottle shapes
+  // middle
   [
     { kind: 'liquor', x: 0.8, shape: 'square', color: 0 },
     { kind: 'liquor', x: 0.97, shape: 'round', color: 1 },
@@ -189,7 +187,7 @@ const SHELF_ITEMS: ShelfItem[][] = [
     { kind: 'liquor', x: 3.88, shape: 'square', color: 0 },
     { kind: 'liquor', x: 4.05, shape: 'tall', color: 1 },
   ],
-  // top: cups, teaware, utensils, a couple of bottles
+  // top
   [
     { kind: 'cups', x: 0.85 },
     { kind: 'jar', x: 1.25 },
@@ -212,18 +210,17 @@ function CupShelves() {
   const top = boards[boards.length - 1] + 0.02
   return (
     <group>
-      {/* glowing back panel, what makes the shelves look lit from inside */}
+      {/* glowing back panel */}
       <mesh position={[x, (bottom + top) / 2, WALL + 0.045]}>
         <planeGeometry args={[width, top - bottom]} />
         <meshBasicMaterial color={GLOW.shelfPanel} />
       </mesh>
-      {/* uprights and boards */}
       <Box position={[xFrom - 0.02, (bottom + top) / 2, boardZ]} size={[0.04, top - bottom, depth]} color={COLOR.tableTop} />
       <Box position={[xTo + 0.02, (bottom + top) / 2, boardZ]} size={[0.04, top - bottom, depth]} color={COLOR.tableTop} />
       {boards.map((y) => (
         <Box key={y} position={[x, y, boardZ]} size={[width, 0.025, depth]} color={COLOR.tableTop} />
       ))}
-      {/* led strip under each board, lighting the shelf below it */}
+      {/* led strips under each board */}
       {boards.slice(1).map((y) => (
         <mesh key={y} position={[x, y - 0.016, boardZ + depth / 2 - 0.02]}>
           <boxGeometry args={[width, 0.006, 0.015]} />
@@ -235,13 +232,13 @@ function CupShelves() {
           <ShelfThing key={`${row}-${item.x}`} item={item} position={[item.x, boards[row] + 0.0125, boardZ]} />
         )),
       )}
-      {/* throws the shelf glow out onto the barista and the bar */}
+      {/* spill light onto the bar */}
       <pointLight position={[x, 1.65, COUNTER_FRONT + 0.1]} color={COLOR.warmLight} intensity={2.2 * BRIGHTNESS} distance={3.5} decay={2} />
     </group>
   )
 }
 
-// position = where the item's base sits on the shelf
+// position = base of the item
 function ShelfThing({ item, position }: { item: ShelfItem; position: Vec3 }) {
   switch (item.kind) {
     case 'syrup':
@@ -259,7 +256,7 @@ function ShelfThing({ item, position }: { item: ShelfItem; position: Vec3 }) {
   }
 }
 
-// syrup in a bottle with a label band and a pump on top
+// syrup bottle w/ pump
 function SyrupBottle({ position, color }: { position: Vec3; color: string }) {
   return (
     <group position={position}>
@@ -303,7 +300,7 @@ function LiquorBottle({ position, shape, color }: { position: Vec3; shape: 'roun
   )
 }
 
-// glass jar of coffee beans with a bamboo lid
+// bean jar
 function BeanJar({ position }: { position: Vec3 }) {
   return (
     <group position={position}>
@@ -317,7 +314,7 @@ function BeanJar({ position }: { position: Vec3 }) {
   )
 }
 
-// steel cup of spoons and a whisk
+// utensil cup
 function UtensilCup({ position }: { position: Vec3 }) {
   return (
     <group position={position}>
@@ -366,7 +363,7 @@ function BottleShelf() {
       {[xFrom + 0.15, (xFrom + xTo) / 2, xTo - 0.15].map((x) => (
         <Box key={x} position={[x, y - 0.08, WALL + 0.06]} size={[0.03, 0.14, 0.04]} color={COLOR.black} />
       ))}
-      {/* bodies: one unit-tall cylinder, stretched per bottle */}
+      {/* bodies (unit cylinder scaled per bottle) */}
       <Instances limit={bottles.length} castShadow>
         <cylinderGeometry args={[0.035, 0.035, 1, 8]} />
         <meshStandardMaterial flatShading roughness={0.25} />
@@ -390,7 +387,7 @@ function layOutBottles() {
   const { xFrom, xTo } = BOTTLE_SHELF
   const bottles: { x: number; height: number; color: string }[] = []
   for (let x = xFrom + 0.12, i = 0; x < xTo - 0.1; x += 0.16, i++) {
-    // leave room for the vine pots
+    // room for the vine pots
     if (VINES.some((vine) => Math.abs(vine.x - x) < 0.11)) continue
     bottles.push({
       x,
@@ -405,15 +402,14 @@ function MenuBoard() {
   const { x, y, width, height } = MENU
   const lines = useMemo(() => layOutMenuLines(), [])
   return (
-    // everything inside is placed relative to the board's center
+    // children are relative to the board center
     <group position={[x, y, WALL]}>
       <Box position={[0, 0, 0.05]} size={[width + 0.08, height + 0.08, 0.04]} color={COLOR.beam} />
       <Box position={[0, 0, 0.072]} size={[width, height, 0.006]} color={COLOR.menuBoard} castShadow={false} />
       <Text position={[0, height / 2 - 0.1, 0.077]} fontSize={0.09} letterSpacing={0.25} color={COLOR.chalk} anchorX="center" anchorY="middle">
         MENU
       </Text>
-      {/* chalk "writing" under the title. unlit, like chalk on a board, so the room
-          lighting can't darken it into the board */}
+      {/* fake chalk text. unlit so the room lighting doesn't darken it */}
       {lines.map((line, i) => (
         <mesh key={i} position={[line.x, line.y, 0.078]}>
           <planeGeometry args={[line.length, 0.018 * line.thick]} />
@@ -424,9 +420,8 @@ function MenuBoard() {
   )
 }
 
-// unreadable on purpose: a rule under the MENU title, then two sections, each with a
-// short heading and a list of items, a dotted price at the right of every item.
-// (relative to the board's center)
+// placeholder lines that look like a menu: title rule, 2 sections of items + prices.
+// coords are relative to the board center
 function layOutMenuLines() {
   const { width, height } = MENU
   const left = -width / 2 + 0.07
@@ -435,11 +430,11 @@ function layOutMenuLines() {
   const line = (from: number, to: number, y: number, thick = 1) => lines.push({ x: (from + to) / 2, y, length: to - from, thick })
 
   let y = height / 2 - 0.17
-  line(-0.18, 0.18, y) // rule under the title
+  line(-0.18, 0.18, y) // title rule
   let n = 0
   for (const items of [5, 4]) {
     y -= 0.065
-    line(left, left + 0.16, y, 1.6) // section heading
+    line(left, left + 0.16, y, 1.6) // heading
     for (let k = 0; k < items; k++, n++) {
       y -= 0.05
       line(left, left + 0.18 + seeded(n + 30) * 0.2, y) // item
@@ -458,7 +453,7 @@ function Vines() {
       {VINES.map((vine) => (
         <Cylinder key={vine.x} position={[vine.x, y + 0.075, potZ]} radius={[0.07, 0.055]} height={0.12} color={COLOR.ceramics[2]} />
       ))}
-      {/* low-poly leaves: little stretched diamonds */}
+      {/* leaves */}
       <Instances limit={leaves.length} castShadow>
         <octahedronGeometry args={[0.035, 0]} />
         <meshStandardMaterial flatShading />
@@ -473,7 +468,7 @@ function Vines() {
 function layOutLeaves() {
   const { y, depth } = BOTTLE_SHELF
   const potZ = WALL + 0.04 + depth / 2
-  const edgeZ = WALL + 0.04 + depth + 0.02 // just past the shelf's front edge
+  const edgeZ = WALL + 0.04 + depth + 0.02 // just past the shelf edge
   const leaves: { position: Vec3; rotation: Vec3; scale: Vec3; color: string }[] = []
   const leaf = (position: Vec3, n: number) => {
     const r = seeded(n)
@@ -486,12 +481,12 @@ function layOutLeaves() {
     })
   }
   VINES.forEach((vine, v) => {
-    // bushy top in the pot
+    // top of the plant
     for (let k = 0; k < 7; k++) {
       const angle = (k / 7) * Math.PI * 2
       leaf([vine.x + Math.cos(angle) * 0.05, y + 0.16 + seeded(v * 50 + k) * 0.05, potZ + Math.sin(angle) * 0.05], v * 50 + k)
     }
-    // then trailing down over the front edge, swaying a little side to side
+    // trailing part, sways a little
     const count = Math.round(vine.length / 0.045)
     for (let k = 0; k < count; k++) {
       leaf([vine.x + Math.sin(k * 0.9 + v) * 0.035, y - k * 0.045, edgeZ + Math.cos(k * 1.3) * 0.015], v * 100 + k + 7)
