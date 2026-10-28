@@ -57,7 +57,7 @@ type LaptopStickerProps = { kind: StickerKind; position: Vec3; rotationY?: numbe
 // being darkened by the room's lighting
 export function LaptopSticker({ kind, position, rotationY = 0, onScreen = false }: LaptopStickerProps) {
   const sticker = STICKERS[kind]
-  const { link, image, background, ink, symbol } = sticker
+  const { link, image } = sticker
   // start with the drawn symbol, swap in the logo image once it loads
   const [texture, setTexture] = useState(() => stickerTexture(sticker))
   const [hovered, setHovered] = useState(false)

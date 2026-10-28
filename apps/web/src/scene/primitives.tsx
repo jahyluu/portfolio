@@ -54,3 +54,13 @@ export function seeded(n: number) {
   const x = Math.sin(n * 12.9898) * 43758.5453
   return x - Math.floor(x)
 }
+
+// a wooden cafe chair, seat facing +z, back at -z
+export function Chair() {
+  return (
+    <>
+      <Box position={[0, 0.45, 0]} size={[0.45, 0.05, 0.45]} color={COLOR.chair} />
+      <Box position={[0, 0.72, -0.21]} size={[0.45, 0.5, 0.05]} color={COLOR.chair} />
+    </>
+  )
+}

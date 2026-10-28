@@ -1,7 +1,6 @@
 import { Color } from 'three'
 
-// scene colors. dark wood + warm plaster, all lit warm.
-// the night outside the window is the only cool color
+// dark wood, warm plaster, warm light. night through the window is the only cool bit
 export const COLOR = {
   // room
   floorBase: '#140c07',
@@ -13,7 +12,7 @@ export const COLOR = {
   beam: '#22160d',
   door: '#2a1a10',
   windowFrame: '#7a4a26',
-  // furniture. light bamboo so tables and the bar stand out from the dark floor
+  // furniture. light bamboo, so tables and the bar pop off the dark floor
   bamboo: '#d4b483',
   tableTop: '#d4b483',
   chair: '#3a2414',
@@ -43,9 +42,23 @@ export const COLOR = {
   pastryDark: '#7a4a22',
   cookie: '#b9834a',
   paperCup: '#d8cbb5',
-  // people (placeholders until the people commit)
+  // people (greybox until real models land)
   person: '#7d7f87',
-  hoodie: '#26262b',
+  hoodie: '#1f1f23',
+  hoodieTrim: '#26262b', // pocket and collar, a shade off so their edges show
+  // me
+  skin: '#f1d2b8',
+  skinShade: '#e2b99b',
+  hair: '#17130f',
+  eyes: '#1d1712',
+  sweats: '#6f7177',
+  shoe: '#141416',
+  sole: '#3a3a3d',
+  silver: '#c9ccd1',
+  airpods: '#f4f4f2',
+  drawstring: '#d6d6d6',
+  backpack: '#2a2c31',
+  backpackTrim: '#3a3d44',
   // tech
   laptop: '#b8bcc4',
   screen: '#9cc0ff',
@@ -59,7 +72,7 @@ export const COLOR = {
   haze: '#2a1b10',
 }
 
-// pushed past white so the bloom pass picks it up
+// past white so bloom actually catches it
 function glow(hex: string, strength: number) {
   return new Color(hex).multiplyScalar(strength)
 }
@@ -67,7 +80,7 @@ function glow(hex: string, strength: number) {
 export const GLOW = {
   bulb: glow('#ffd9a8', 6),
   downlight: glow('#ffd9a8', 4),
-  // back panel of the cup shelves. just over white so it glows softly
+  // cup-shelf back panel. barely over white = a soft glow
   shelfPanel: glow('#ffcf8a', 1.25),
   ledStrip: glow('#ffd9a8', 3),
 }

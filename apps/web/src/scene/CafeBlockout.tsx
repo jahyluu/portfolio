@@ -5,7 +5,6 @@ import {
   GROUP_SEATS,
   GROUP_TABLE,
   LAPTOP,
-  ME,
   MY_TABLE,
   PENDANT,
   ROOM,
@@ -24,7 +23,8 @@ import {
 } from './layout'
 import { LaptopSticker, type StickerKind } from './EasterEggs'
 import { COLOR, GLOW } from './palette'
-import { Box } from './primitives'
+import { Me } from './Me'
+import { Box, Chair } from './primitives'
 
 // greybox stand-in. swap for real models later, keep the same positions.
 // the room shell is in Room.tsx, the bar in Bar.tsx, the wall behind it in BackWall.tsx
@@ -34,7 +34,7 @@ export function CafeBlockout() {
     <group>
       {/* hero table */}
       <SquareTable position={MY_TABLE.position} size={MY_TABLE.size} />
-      <SeatedPerson position={ME.position} rotationY={ME.rotationY} color={COLOR.hoodie} />
+      <Me />
       <Laptop position={LAPTOP.position} />
       <Pendant position={PENDANT.position} />
 
@@ -161,15 +161,6 @@ function SleepingBody({ color }: { color: string }) {
         <sphereGeometry args={[0.12, 12, 10]} />
         <meshStandardMaterial color={color} flatShading />
       </mesh>
-    </>
-  )
-}
-
-function Chair() {
-  return (
-    <>
-      <Box position={[0, 0.45, 0]} size={[0.45, 0.05, 0.45]} color={COLOR.chair} />
-      <Box position={[0, 0.72, -0.21]} size={[0.45, 0.5, 0.05]} color={COLOR.chair} />
     </>
   )
 }

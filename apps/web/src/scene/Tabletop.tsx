@@ -28,9 +28,7 @@ export function Tabletops() {
   const wx = WINDOW_TABLE.x
   return (
     <group>
-      {/* my table: coffee on my right, fruit tart on my left (I face south) */}
-      {/* turned so the handle points away from the laptop */}
-      <CoffeeCup position={[mx - 0.38, TABLE_HEIGHT, mz - 0.22]} rotationY={Math.PI} steam />
+      {/* my table. tart on my left; my coffee is in Me.tsx so I can pick it up */}
       <PastryPlate position={[mx + 0.36, TABLE_HEIGHT, mz - 0.12]} pastry="tart" />
 
       {/* window booth: a cup in front of everyone sitting there, a shared pastry for the couple */}
@@ -59,7 +57,7 @@ export function Tabletops() {
 }
 
 // mug on a saucer, filled to just under the rim
-function CoffeeCup({ position, rotationY = 0, steam = false }: { position: Vec3; rotationY?: number; steam?: boolean }) {
+export function CoffeeCup({ position, rotationY = 0, steam = false }: { position: Vec3; rotationY?: number; steam?: boolean }) {
   const cream = COLOR.ceramics[0]
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
