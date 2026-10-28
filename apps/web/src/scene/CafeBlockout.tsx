@@ -50,8 +50,9 @@ export function CafeBlockout() {
         // face across the table
         const facing = faceToward(position, [sx, 0, tz])
         const inward = sz < tz ? 1 : -1
-        // flip for the south side. small angle so facing laptops don't overlap
-        const tilt = (i % 2 === 0 ? 1 : -1) * 0.2
+        // flip for the south side. north pair angles inward (/ \ from the camera)
+        const side = i % 2 === 0 ? 1 : -1
+        const tilt = (inward > 0 ? -side : side) * 0.2
         return (
           <group key={i}>
             <SeatedPerson position={position} rotationY={facing} empty={!occupied} />
