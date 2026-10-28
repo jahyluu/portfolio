@@ -1,10 +1,11 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { CatmullRomCurve3, DoubleSide, Group, LatheGeometry, MathUtils, Mesh, Quaternion, TubeGeometry, Vector2, Vector3 } from 'three'
+import { CatmullRomCurve3, CylinderGeometry, DoubleSide, Group, LatheGeometry, MathUtils, Mesh, Quaternion, TubeGeometry, Vector2, Vector3 } from 'three'
 import { Blob, LIMB, Limb, makeHairShell, placeLimb, reach, type Hairline } from './body'
 import { LAPTOP, ME, MY_TABLE, TABLE_HEIGHT, type Vec3 } from './layout'
 import { COLOR } from './palette'
 import { Chair } from './primitives'
+import { Sneaker } from './Sneakers'
 import { CoffeeCup } from './Tabletop'
 
 // me. faces +z (laptop), my right is -x, which is the side the camera passes.
@@ -60,6 +61,9 @@ function headAngles(t: number) {
 
 // torso-local
 const HEAD_PIVOT = new Vector3(0, 0.585, 0.01)
+const NECK_BASE = new Vector3(0, 0.5, 0.01)
+// unit cylinder, slight taper
+const NECK = new CylinderGeometry(0.91, 1, 1, 12)
 const LIPS = new Vector3(0, 0.072, 0.1)
 const CUP_TILT = -0.32
 const X_AXIS = new Vector3(1, 0, 0)
@@ -80,6 +84,9 @@ export function Me() {
   )
 }
 
+// black, with tan laces
+const MY_SHOES = { upper: '#1c1c20', outsole: '#0e0e10', midsole: '#3e3e45', lace: '#a8835f' }
+
 function Legs() {
   const hipY = HIP.y
   return (
@@ -97,15 +104,7 @@ function Legs() {
               <icosahedronGeometry args={[0.062, 1]} />
               <meshStandardMaterial color={COLOR.sweats} flatShading />
             </mesh>
-            {/* shoe */}
-            <mesh position={[ankle[0], 0.055, ankle[2] + 0.06]} castShadow>
-              <boxGeometry args={[0.1, 0.085, 0.26]} />
-              <meshStandardMaterial color={COLOR.shoe} flatShading />
-            </mesh>
-            <mesh position={[ankle[0], 0.012, ankle[2] + 0.06]}>
-              <boxGeometry args={[0.104, 0.024, 0.27]} />
-              <meshStandardMaterial color={COLOR.sole} flatShading />
-            </mesh>
+            <Sneaker position={[ankle[0], 0, ankle[2] + 0.045]} colors={MY_SHOES} />
           </group>
         )
       })}
@@ -207,11 +206,15 @@ const DRAWSTRINGS = [-1, 1].map((side) => {
 // everything that leans with the torso
 function Torso() {
   const head = useRef<Group>(null!)
+  const neck = useRef<Mesh>(null!)
 
   useFrame(({ clock }) => {
-    if (!head.current) return
+    if (!head.current || !neck.current) return
     const { pitch, yaw, roll } = headAngles(clock.elapsedTime)
     head.current.rotation.set(pitch, yaw, roll)
+    // neck goes from inside the collar into the back of the skull
+    const nape = new Vector3(0, 0.07, -0.02).applyEuler(head.current.rotation).add(HEAD_PIVOT)
+    placeLimb(neck.current, NECK_BASE, nape, 0.055)
   })
 
   return (
@@ -236,8 +239,7 @@ function Torso() {
       ))}
       <Glasses />
       {/* neck */}
-      <mesh position={[0, 0.55, 0.01]}>
-        <cylinderGeometry args={[0.05, 0.055, 0.1, 12]} />
+      <mesh ref={neck} geometry={NECK}>
         <meshStandardMaterial color={COLOR.skin} flatShading />
       </mesh>
       <group ref={head} position={HEAD_PIVOT}>
@@ -498,7 +500,7 @@ function Arms() {
 // on the floor, left of the chair
 function Backpack() {
   return (
-    <group position={[SX + 0.42, 0, SZ + 0.05]} rotation={[-0.08, 0.4, 0]}>
+    <group position={[SX - 0.42, 0, SZ + 0.05]} rotation={[-0.08, -0.4, 0]}>
       <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
         <boxGeometry args={[0.3, 0.4, 0.17]} />
         <meshStandardMaterial color={COLOR.backpack} flatShading />

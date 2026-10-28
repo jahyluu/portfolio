@@ -56,11 +56,31 @@ export function seeded(n: number) {
 }
 
 // seat faces +z
+// cafe chair, back toward -z. seat top at 0.475
+const CHAIR = { width: 0.45, seat: 0.475, back: 0.95, leg: 0.034 }
 export function Chair() {
+  const { width, seat, back, leg } = CHAIR
+  const half = width / 2
+  const lx = half - leg / 2 - 0.012
+  const lz = half - leg / 2 - 0.012
   return (
     <>
-      <Box position={[0, 0.45, 0]} size={[0.45, 0.05, 0.45]} color={COLOR.chair} />
-      <Box position={[0, 0.72, -0.21]} size={[0.45, 0.5, 0.05]} color={COLOR.chair} />
+      <Box position={[0, seat - 0.02, 0]} size={[width, 0.04, width]} color={COLOR.chair} />
+      {/* front legs */}
+      {[-1, 1].map((side) => (
+        <Box key={side} position={[side * lx, (seat - 0.04) / 2, lz]} size={[leg, seat - 0.04, leg]} color={COLOR.chair} />
+      ))}
+      {/* back legs double as the backrest posts */}
+      {[-1, 1].map((side) => (
+        <Box key={side} position={[side * lx, back / 2, -lz]} size={[leg, back, leg]} color={COLOR.chair} />
+      ))}
+      {/* backrest + rail */}
+      <Box position={[0, back - 0.08, -lz]} size={[width - 0.024, 0.13, 0.026]} color={COLOR.chair} />
+      <Box position={[0, seat + 0.15, -lz]} size={[width - 0.024, 0.03, 0.022]} color={COLOR.chair} />
+      {/* stretchers */}
+      {[-1, 1].map((side) => (
+        <Box key={side} position={[side * lx, 0.16, 0]} size={[0.02, 0.02, 2 * lz]} color={COLOR.chair} castShadow={false} />
+      ))}
     </>
   )
 }

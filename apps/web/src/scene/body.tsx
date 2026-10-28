@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { CylinderGeometry, IcosahedronGeometry, MathUtils, Mesh, SphereGeometry, Vector3 } from 'three'
+import { CylinderGeometry, IcosahedronGeometry, MathUtils, Mesh, SphereGeometry, Vector3, type Material } from 'three'
 import type { Vec3 } from './layout'
 
 // shared helpers for the characters (Me, Barista)
@@ -19,7 +19,7 @@ export function placeLimb(mesh: Mesh, from: Vector3, to: Vector3, radius: number
 }
 
 // static limb, placed once
-export function Limb({ from, to, radius, color }: { from: Vec3; to: Vec3; radius: number; color: string }) {
+export function Limb({ from, to, radius, color, material }: { from: Vec3; to: Vec3; radius: number; color: string; material?: Material }) {
   const ref = useRef<Mesh>(null!)
   const placed = useRef(false)
   useFrame(() => {
@@ -27,6 +27,7 @@ export function Limb({ from, to, radius, color }: { from: Vec3; to: Vec3; radius
     placeLimb(ref.current, new Vector3(...from), new Vector3(...to), radius)
     placed.current = true
   })
+  if (material) return <mesh ref={ref} geometry={LIMB} material={material} castShadow receiveShadow />
   return (
     <mesh ref={ref} geometry={LIMB} castShadow receiveShadow>
       <meshStandardMaterial color={color} flatShading />

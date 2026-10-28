@@ -51,7 +51,6 @@ export const COLOR = {
   eyes: '#1d1712',
   sweats: '#6f7177',
   shoe: '#141416',
-  sole: '#3a3a3d',
   silver: '#c9ccd1',
   airpods: '#f4f4f2',
   drawstring: '#d6d6d6',

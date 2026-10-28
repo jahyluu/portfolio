@@ -4,6 +4,7 @@ import { DoubleSide, Group, LatheGeometry, MathUtils, Mesh, Vector2, Vector3 } f
 import { BAR, BOUNDS, type Vec3 } from './layout'
 import { COLOR } from './palette'
 import { Blob, LIMB, makeHairShell, placeLimb, reach, type Hairline } from './body'
+import { Sneaker, sneakerColors } from './Sneakers'
 import { CoffeeCup } from './Tabletop'
 
 // barista. runs a ~1.5 min loop with pauses: bus a cup, grind, pull a shot, serve,
@@ -229,6 +230,7 @@ export function Barista() {
   const cup = useRef<Group>(null!)
   const rag = useRef<Mesh>(null!)
   const parts = useRef<Record<string, Mesh>>({})
+  const shoes = useRef<Group[]>([])
   const set = (key: string) => (object: Mesh | null) => {
     if (object) parts.current[key] = object
   }
@@ -251,7 +253,7 @@ export function Barista() {
   useFrame(({ clock }, delta) => {
     const p = parts.current
     const ready = root.current && torso.current && head.current && cup.current && rag.current
-    const limbs = ['thigh', 'shin', 'upper', 'fore', 'hand', 'elbow', 'shoe'].every((k) => p[`${k}0`] && p[`${k}1`])
+    const limbs = ['thigh', 'shin', 'upper', 'fore', 'hand', 'elbow', 'shoulder'].every((k) => p[`${k}0`] && p[`${k}1`]) && shoes.current.length === 2
     if (!ready || !limbs) return
     const t = clock.elapsedTime
     const dt = Math.min(delta, 0.1)
@@ -311,7 +313,7 @@ export function Barista() {
       reach(hip, ankle, new Vector3(0, 0, 1), knee, LEG.upper, LEG.lower)
       placeLimb(p[`thigh${k}`], hip, knee, 0.075)
       placeLimb(p[`shin${k}`], knee, ankle, 0.058)
-      p[`shoe${k}`].position.set(ankle.x, ankle.y - 0.04, ankle.z + 0.05)
+      shoes.current[k].position.set(ankle.x, ankle.y - 0.04, ankle.z + 0.05)
     })
 
     // arms
@@ -323,6 +325,7 @@ export function Barista() {
       placeLimb(p[`upper${k}`], shoulder, elbow, 0.05)
       placeLimb(p[`fore${k}`], elbow, wrist, 0.042)
       p[`elbow${k}`].position.copy(elbow)
+      p[`shoulder${k}`].position.copy(shoulder)
       const dir = wrist.clone().sub(elbow)
       dir.y *= 0.4
       dir.normalize()
@@ -367,10 +370,10 @@ export function Barista() {
             <mesh ref={set(`shin${k}`)} geometry={LIMB} castShadow>
               <meshStandardMaterial color={COLOR.baristaPants} flatShading />
             </mesh>
-            <mesh ref={set(`shoe${k}`)} castShadow>
-              <boxGeometry args={[0.095, 0.08, 0.25]} />
-              <meshStandardMaterial color={COLOR.shoe} flatShading />
-            </mesh>
+            {/* group origin is 4cm off the floor */}
+            <group ref={(group) => void (group && (shoes.current[k] = group))}>
+              <Sneaker position={[0, -0.04, 0]} colors={sneakerColors(COLOR.shoe)} scale={0.95} />
+            </group>
           </group>
         ))}
         {/* hips */}
@@ -412,6 +415,10 @@ export function Barista() {
         {[0, 1].map((k) => (
           <group key={k}>
             <mesh ref={set(`upper${k}`)} geometry={LIMB} castShadow>
+              <meshStandardMaterial color={COLOR.baristaShirt} flatShading />
+            </mesh>
+            <mesh ref={set(`shoulder${k}`)}>
+              <icosahedronGeometry args={[0.052, 1]} />
               <meshStandardMaterial color={COLOR.baristaShirt} flatShading />
             </mesh>
             <mesh ref={set(`elbow${k}`)}>

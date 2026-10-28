@@ -202,7 +202,8 @@ function StudyClutter() {
           <group key={i}>
             <Paper position={[sx + 0.25, y, sz + inward * 0.42]} rotationY={0.3 + i * 0.5} />
             <Paper position={[sx + 0.27, y + 0.002, sz + inward * 0.46]} rotationY={-0.2 + i * 0.4} />
-            <CoffeeCup position={[sx - 0.24, y, sz + inward * 0.38]} />
+            {/* seat 0 has a mouse there, so his cup sits further in past it */}
+            <CoffeeCup position={i === 0 ? [sx - 0.22, y, sz + inward * 0.67] : [sx - 0.24, y, sz + inward * 0.38]} />
           </group>
         )
       })}
@@ -327,7 +328,7 @@ function Drips({ position }: { position: Vec3 }) {
 // ~1.6x real size so the flop is readable from the camera
 const CARD = { width: 0.1, length: 0.14 }
 
-type Suit = 'hearts' | 'diamonds' | 'spades' | 'clubs'
+export type Suit = 'hearts' | 'diamonds' | 'spades' | 'clubs'
 // \uFE0E = text glyph, not emoji
 const SUIT_SYMBOL: Record<Suit, string> = { hearts: '♥\uFE0E', diamonds: '♦\uFE0E', spades: '♠\uFE0E', clubs: '♣\uFE0E' }
 
@@ -338,6 +339,19 @@ const FLOP: { rank: string; suit: Suit }[] = [
   { rank: '6', suit: 'spades' },
 ]
 const CHIP_COLORS = ['#b5262a', '#efe9dd', '#2f4f8f', '#3f6b35', '#1e1e20']
+// seats that hold their cards up instead of leaving them on the table (the cards are
+// drawn by Customer.tsx, see HeldCards)
+const HOLDING = new Set([0, 1])
+
+// each player's chips, in that player's table space (+z toward them, +x to their right)
+export const CHIP_STACKS = [
+  { position: [0.15, 0, 0.33] as Vec3, count: (seat: number) => 4 + Math.floor(seeded(seat * 10) * 6) },
+  { position: [0.2, 0, 0.3] as Vec3, count: (seat: number) => 3 + Math.floor(seeded(seat * 10 + 5) * 6) },
+  { position: [-0.16, 0, 0.32] as Vec3, count: (seat: number) => 2 + Math.floor(seeded(seat * 10 + 7) * 5) },
+]
+// the raiser's top chips are drawn by Customer.tsx
+export const RAISER = 2
+export const RAISE_CHIPS = 4
 
 function PokerGame() {
   const [tx, , tz] = GROUP_TABLE.position
@@ -371,14 +385,41 @@ function PokerGame() {
         const towardSeat = Math.atan2(sx - tx, sz - tz)
         return (
           <group key={i} position={[tx, y, tz]} rotation={[0, towardSeat, 0]}>
-            <CardBack position={[-0.03, 0.001, 0.34]} rotationY={0.15} texture={backTexture} />
-            <CardBack position={[0.03, 0.0015, 0.35]} rotationY={-0.1} texture={backTexture} />
-            <ChipStack position={[0.15, 0, 0.33]} count={4 + Math.floor(seeded(i * 10) * 6)} seed={i * 10 + 1} />
-            <ChipStack position={[0.2, 0, 0.3]} count={3 + Math.floor(seeded(i * 10 + 5) * 6)} seed={i * 10 + 2} />
-            <ChipStack position={[-0.16, 0, 0.32]} count={2 + Math.floor(seeded(i * 10 + 7) * 5)} seed={i * 10 + 3} />
+            {!HOLDING.has(i) && (
+              <>
+                <CardBack position={[-0.03, 0.001, 0.34]} rotationY={0.15} texture={backTexture} />
+                <CardBack position={[0.03, 0.0015, 0.35]} rotationY={-0.1} texture={backTexture} />
+              </>
+            )}
+            {CHIP_STACKS.map((stack, k) => (
+              <ChipStack key={k} position={stack.position} count={stack.count(i) - (i === RAISER && k === 0 ? RAISE_CHIPS : 0)} seed={i * 10 + k + 1} />
+            ))}
           </group>
         )
       })}
+    </group>
+  )
+}
+
+// two cards held up in a small fan, faces toward +z. same oversized cards as the table
+// so they read from a distance
+export function HeldCards({ cards }: { cards: { rank: string; suit: Suit }[] }) {
+  const textures = useMemo(() => cards.map(({ rank, suit }) => cardFaceTexture(rank, suit)), [cards])
+  const backTexture = useMemo(() => cardBackTexture(), [])
+  return (
+    <group>
+      {textures.map((texture, i) => (
+        <group key={i} position={[(i - 0.5) * 0.045, 0, i * 0.002]} rotation={[0, 0, (0.5 - i) * 0.3]}>
+          <mesh position={[0, 0.05, 0]}>
+            <planeGeometry args={[CARD.width, CARD.length]} />
+            <meshStandardMaterial map={texture} roughness={0.6} />
+          </mesh>
+          <mesh position={[0, 0.05, -0.0005]} rotation={[0, Math.PI, 0]}>
+            <planeGeometry args={[CARD.width, CARD.length]} />
+            <meshStandardMaterial map={backTexture} roughness={0.6} />
+          </mesh>
+        </group>
+      ))}
     </group>
   )
 }
@@ -403,11 +444,11 @@ function CardBack({ position, rotationY = 0, texture }: { position: Vec3; rotati
   )
 }
 
-// chip stack, seeded colors
-function ChipStack({ position: [x, y, z], count, seed }: { position: Vec3; count: number; seed: number }) {
+// chip stack, seeded colors. `from` starts partway up a stack (for chips lifted off the top)
+export function ChipStack({ position: [x, y, z], count, seed, from = 0 }: { position: Vec3; count: number; seed: number; from?: number }) {
   return (
     <group position={[x, y, z]}>
-      {Array.from({ length: count }, (_, i) => (
+      {Array.from({ length: count }, (_, j) => from + j).map((i) => (
         <Cylinder
           key={i}
           position={[0, 0.002 + i * 0.0036, 0]}
