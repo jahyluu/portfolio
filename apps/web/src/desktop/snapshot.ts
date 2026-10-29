@@ -110,18 +110,19 @@ export async function takeSnapshot() {
     // wait for running animations (window fade-in) or the clone catches them mid-way
     const animations = element.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => {}))
     await Promise.race([Promise.all(animations), new Promise((resolve) => setTimeout(resolve, 1000))])
+    // laid out at its unscaled size (screen.ts uiSize), drawn at the size it shows at
+    const layout = { width: element.offsetWidth, height: element.offsetHeight }
     const { width, height } = screenRect()
     const svg = await toSvg(element, {
-      width,
-      height,
+      ...layout,
       // system fonts, nothing to embed
       skipFonts: true,
       // iframes can't be captured (there's a placeholder page behind the resume pdf).
       // the dock is left out on purpose, it slides in on arrival
       filter: (node) => !(node instanceof HTMLIFrameElement) && !(node instanceof HTMLElement && node.classList.contains('dock')),
-      // place it at 0,0 and make it visible (it's at opacity 0 in the cafe). the logical
+      // place it at 0,0, unscaled and visible (it's at opacity 0 in the cafe). the logical
       // insets get copied too and override left/top, so reset those as well
-      style: { left: '0', top: '0', insetInlineStart: '0', insetBlockStart: '0', opacity: '1' },
+      style: { left: '0', top: '0', insetInlineStart: '0', insetBlockStart: '0', opacity: '1', transform: 'none' },
     })
     image = await rasterize(fixSnapshotMarkup(svg), width, height)
     version++

@@ -3,7 +3,7 @@ import { APPS, DOCK, type AppId } from './apps'
 import { AppleIcon, DocumentIcon, FolderIcon } from './icons'
 import { useDesktopActive } from '../handoff'
 import { goToCafe } from '../scroll'
-import { useScreenRect } from './screen'
+import { useUiRect } from './screen'
 import { registerDesktop, scheduleSnapshot, useSnapshots } from './snapshot'
 import { desktop, MENU_BAR_HEIGHT, useDesktop, type DesktopWindow } from './store'
 import './desktop.css'
@@ -15,19 +15,19 @@ export function Desktop() {
   const { windows, focused } = state
   // no clicks or focus while it's hidden
   const active = useDesktopActive()
-  const { width, height, left, top } = useScreenRect()
+  const { rect, style } = useUiRect()
   // full screen when the top window is maximized
   const visible = windows.filter((win) => !win.minimized)
   const topWindow = visible.length ? visible.reduce((a, b) => (a.z > b.z ? a : b)) : null
   const fullScreen = !!topWindow?.maximized
 
-  useSnapshots(active, [state], { width, height })
+  useSnapshots(active, [state], rect)
 
   return (
     <div
       ref={registerDesktop}
       className={`desktop${fullScreen ? ' full-screen' : ''}`}
-      style={{ width, height, left, top }}
+      style={style}
       inert={!active}
       onPointerDown={() => desktop.select(null)}
       // scrolling inside a window counts as a change too
@@ -119,19 +119,20 @@ const RESIZE_EDGES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']
 
 function Window({ win, focused }: { win: DesktopWindow; focused: boolean }) {
   const app = APPS[win.app]
-  const screen = useScreenRect()
+  // bounds and positions are in layout px, pointer moves get divided by the scale
+  const { width: screenWidth, height: screenHeight, scale } = useUiRect()
   const drag = useRef<{ dx: number; dy: number } | null>(null)
 
   const onPointerDown = (event: ReactPointerEvent) => {
     if (win.maximized || (event.target as HTMLElement).closest('button')) return
-    drag.current = { dx: event.clientX - win.x, dy: event.clientY - win.y }
+    drag.current = { dx: event.clientX / scale - win.x, dy: event.clientY / scale - win.y }
     event.currentTarget.setPointerCapture(event.pointerId)
   }
   const onPointerMove = (event: ReactPointerEvent) => {
     if (!drag.current) return
     // keep the title bar on screen so it can always be grabbed
-    const x = Math.min(Math.max(event.clientX - drag.current.dx, 80 - win.width), screen.width - 80)
-    const y = Math.min(Math.max(event.clientY - drag.current.dy, MENU_BAR_HEIGHT), screen.height - 60)
+    const x = Math.min(Math.max(event.clientX / scale - drag.current.dx, 80 - win.width), screenWidth - 80)
+    const y = Math.min(Math.max(event.clientY / scale - drag.current.dy, MENU_BAR_HEIGHT), screenHeight - 60)
     desktop.move(win.id, x, y)
   }
   const onPointerUp = () => {
@@ -149,11 +150,11 @@ function Window({ win, focused }: { win: DesktopWindow; focused: boolean }) {
   const onResize = (event: ReactPointerEvent) => {
     const r = resizing.current
     if (!r) return
-    const dx = event.clientX - r.x
-    const dy = event.clientY - r.y
+    const dx = (event.clientX - r.x) / scale
+    const dy = (event.clientY - r.y) / scale
     let { x, y, width, height } = r.rect
-    if (r.dir.includes('e')) width = Math.min(Math.max(width + dx, MIN_SIZE.width), screen.width - x)
-    if (r.dir.includes('s')) height = Math.min(Math.max(height + dy, MIN_SIZE.height), screen.height - y)
+    if (r.dir.includes('e')) width = Math.min(Math.max(width + dx, MIN_SIZE.width), screenWidth - x)
+    if (r.dir.includes('s')) height = Math.min(Math.max(height + dy, MIN_SIZE.height), screenHeight - y)
     if (r.dir.includes('w')) {
       const right = x + width
       x = Math.min(Math.max(x + dx, 0), right - MIN_SIZE.width)

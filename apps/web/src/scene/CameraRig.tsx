@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
 import { updateHandoff } from '../handoff'
@@ -14,6 +14,10 @@ const MIN_SPEED = 0.03
 // phone mode: turn off the spiral toward my phone from here (scroll progress)
 const PHONE_TURN_FROM = 0.6
 const UP = new Vector3(0, 1, 0)
+// vertical fov (Canvas in Experience). windows wider than MAX_ASPECT would see past the walls,
+// so past that the fov narrows instead and the top and bottom get cropped
+const FOV = 45
+const MAX_ASPECT = 16 / 9
 // camera follows the spiral in layout.ts based on scroll
 export function CameraRig() {
   const camera = useThree((state) => state.camera) as PerspectiveCamera
@@ -23,14 +27,20 @@ export function CameraRig() {
   const smoothed = useRef(startOnDesktop ? 1 : scroll.progress)
 
   const device = deviceFor(width, height)
+  const fov = fovFor(width / height)
+  useLayoutEffect(() => {
+    camera.fov = fov
+    camera.updateProjectionMatrix()
+  }, [camera, fov])
+
   const spiral = useMemo(
-    () => makeSpiral(fullScreenPosition(camera.fov, width, height, 'laptop')),
-    [camera.fov, width, height],
+    () => makeSpiral(fullScreenPosition(fov, width, height, 'laptop')),
+    [fov, width, height],
   )
   // phone end pose. up = the phone's top so it reads upright
   const phoneEnd = useMemo(
-    () => device === 'phone' ? { position: toVector(fullScreenPosition(camera.fov, width, height, 'phone')), target: toVector(MY_PHONE.center), up: toVector(MY_PHONE.top) } : null,
-    [device, camera.fov, width, height],
+    () => device === 'phone' ? { position: toVector(fullScreenPosition(fov, width, height, 'phone')), target: toVector(MY_PHONE.center), up: toVector(MY_PHONE.top) } : null,
+    [device, fov, width, height],
   )
 
   const position = useMemo(() => new Vector3(), [])
@@ -53,6 +63,13 @@ export function CameraRig() {
   })
 
   return null
+}
+
+function fovFor(aspect: number) {
+  if (aspect <= MAX_ASPECT) return FOV
+  // same horizontal fov as at MAX_ASPECT
+  const halfWidth = Math.tan(MathUtils.degToRad(FOV) / 2) * MAX_ASPECT
+  return MathUtils.radToDeg(2 * Math.atan(halfWidth / aspect))
 }
 
 function easeToward(current: number, target: number, delta: number) {

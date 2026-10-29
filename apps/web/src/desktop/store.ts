@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { APPS, type AppId } from './apps'
-import { screenRect } from './screen'
+import { uiSize } from './screen'
 
 export type DesktopWindow = {
   id: string
@@ -59,7 +59,7 @@ export const desktop = {
       set({ focused: id })
       return
     }
-    const screen = screenRect()
+    const screen = uiSize()
     // fit smaller screens, leaving room for the menu bar and dock
     const width = Math.min(APPS[app].size[0], screen.width - 48)
     const height = Math.min(APPS[app].size[1], screen.height - MENU_BAR_HEIGHT - 96)

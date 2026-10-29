@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ComponentType, type PointerEvent as R
 import { About, Contact, ProjectDetails, Stack } from '../desktop/apps'
 import { PROFILE, PROJECTS } from '../desktop/content'
 import { AboutTile, CafeTile, ContactTile, FolderIcon, ProjectsTile, ResumeTile, StackTile } from '../desktop/icons'
-import { useScreenRect } from '../desktop/screen'
+import { useUiRect } from '../desktop/screen'
 import { registerDesktop, scheduleSnapshot, useSnapshots } from '../desktop/snapshot'
 import { useDesktopActive } from '../handoff'
 import { goToCafe } from '../scroll'
@@ -28,15 +28,15 @@ export function PhoneUI() {
   const state = usePhone()
   const { tasks, view, current } = state
   const active = useDesktopActive()
-  const { width, height, left, top } = useScreenRect()
+  const { rect, style } = useUiRect()
 
-  useSnapshots(active, [state], { width, height })
+  useSnapshots(active, [state], rect)
 
   return (
     <div
       ref={registerDesktop}
       className={`phone view-${view}`}
-      style={{ width, height, left, top }}
+      style={style}
       inert={!active}
       onScrollCapture={() => scheduleSnapshot()}
     >

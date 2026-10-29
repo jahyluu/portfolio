@@ -76,3 +76,30 @@ export function useScreenRect() {
 export function useDevice() {
   return useScreenRect().device
 }
+
+// smallest size the UI is laid out at. below this it's laid out at this size and scaled down
+// as a whole, like a real screen, instead of icons falling off and the menu bar wrapping
+const MIN_UI_WIDTH = { laptop: 1100, phone: 360 }
+
+type Rect = ReturnType<typeof screenRect>
+
+// layout size (css px before scaling) + the scale that fits it to the rect
+export function uiSize(rect: Rect = screenRect()) {
+  const scale = Math.min(1, rect.width / MIN_UI_WIDTH[rect.device])
+  return { width: rect.width / scale, height: rect.height / scale, scale }
+}
+
+// position, layout size and transform for the desktop/phone root
+export function useUiRect() {
+  const rect = useScreenRect()
+  const { width, height, scale } = uiSize(rect)
+  const style = {
+    left: rect.left,
+    top: rect.top,
+    width,
+    height,
+    transform: scale < 1 ? `scale(${scale})` : undefined,
+    transformOrigin: '0 0',
+  }
+  return { rect, width, height, scale, style }
+}

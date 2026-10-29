@@ -37,6 +37,8 @@ button, and `/#desktop` opens straight onto the desktop.
   the same whole-pixel rect, so they line up exactly and the swap isn't visible
 - The screen is drawn after the glow and color grading so its colors match the live desktop,
   and anything near my table (my arms, the coffee) still passes in front of it
+- In a small window the desktop scales down as a whole like a real screen, so icons and the
+  menu bar don't run out of room
 - The 3D scene stops rendering while you're on the desktop and wakes up when you scroll
 
 **What's on it**
@@ -88,6 +90,7 @@ way as the desktop: a snapshot on the phone screen in the cafe, the live UI once
 - Laptops with QWERTY keyboards and trackpads
 - My table: laptop, phone, coffee with steam, a fruit tart, my backpack beside the chair
 - An ink-wash style pixel painting, a floor-to-ceiling storefront window and a glass door
+- Very wide windows crop the top and bottom instead of seeing past the walls
 - Soft, warm lighting with shadows, glow and film-style color grading. The glow eases off as the
   camera gets close to the laptop so the close-up stays sharp
 
