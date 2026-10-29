@@ -7,7 +7,7 @@ export type AppId = 'projects' | 'project' | 'about' | 'stack' | 'resume' | 'con
 
 type App = {
   title: (item?: string) => string
-  // [width, height] when it first opens
+  // initial [width, height]
   size: [number, number]
   Tile: ComponentType<{ size?: number }>
   Content: ComponentType<{ item?: string }>
@@ -22,7 +22,7 @@ export const APPS: Record<AppId, App> = {
   contact: { title: () => 'Contact', size: [400, 330], Tile: ContactTile, Content: Contact },
 }
 
-// in the dock, in this order
+// dock order
 export const DOCK: AppId[] = ['projects', 'about', 'stack', 'resume', 'contact']
 
 function Finder() {
@@ -156,7 +156,14 @@ function Resume() {
           Open in new tab
         </a>
       </div>
-      <iframe src={`${PROFILE.resume}#view=FitH`} title="Resume" />
+      <div className="resume-view">
+        <div className="resume-page" aria-hidden="true">
+          {[40, 90, 75, 85, 60, 0, 90, 80, 70, 88, 55, 0, 85, 75, 90, 65].map((width, i) =>
+            width ? <span key={i} style={{ width: i === 0 ? undefined : `${width}%` }} /> : <br key={i} />,
+          )}
+        </div>
+        <iframe src={`${PROFILE.resume}#view=FitH`} title="Resume" />
+      </div>
     </div>
   )
 }

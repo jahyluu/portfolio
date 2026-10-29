@@ -1,4 +1,4 @@
-// everything the desktop shows. first drafts pulled from my resume, rewrite before launch
+// desktop content. first drafts from my resume, rewrite before launch
 
 export const PROFILE = {
   name: 'Jahy Luu',
@@ -37,7 +37,7 @@ export type Project = {
   name: string
   tagline: string
   stack: string[]
-  // folder tint in Finder
+  // folder color
   color: string
   summary: string[]
   repo?: string

@@ -5,6 +5,7 @@ import {
   LAPTOP,
   MY_TABLE,
   SCREEN_SIZE,
+  LID,
   SLEEPER_EMPTY_SEATS,
   SLEEPER_SEAT,
   SLEEPER_TABLE,
@@ -24,6 +25,7 @@ import { CAST, Customer, Sleeper, type Action, type Look } from './Customer'
 import { Me } from './Me'
 import { StringLights } from './StringLights'
 import { Box, Chair } from './primitives'
+import { DesktopScreen } from './DesktopScreen'
 import { BoxGeometry, Color, MeshStandardMaterial } from 'three'
 import { RoundedBox } from '@react-three/drei'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -265,7 +267,7 @@ function WestTables() {
 }
 
 // faces +z
-// mine: the desktop gets drawn over the screen (handoff.ts), so it's just the black border
+// mine: shows the desktop (DesktopScreen)
 type LaptopProps = { position: Vec3; rotationY?: number; sticker?: StickerKind; mine?: boolean }
 
 // key widths in u, 15u per row. rows go from the hinge (+z) toward the user
@@ -323,18 +325,20 @@ const KEY_MATERIAL = new MeshStandardMaterial({ color: '#2a2c31', roughness: 0.8
 function Laptop({ position, rotationY = 0, sticker, mine = false }: LaptopProps) {
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      <Box position={[0, 0.0075, 0]} size={[0.32, 0.015, 0.22]} color={COLOR.laptop} />
+      <Box position={[0, 0.0075, 0]} size={[LID.width, 0.015, 0.22]} color={COLOR.laptop} />
       {/* keyboard + trackpad */}
       <mesh geometry={KEYBOARD} material={KEY_MATERIAL} position={[0, 0.015, 0]} receiveShadow />
       <Box position={[0, 0.0152, -0.068]} size={[0.11, 0.0006, 0.065]} color="#959aa3" />
       <group position={[0, 0.015, 0.11]} rotation={[LAPTOP.tilt, 0, 0]}>
-        <Box position={[0, 0.105, 0]} size={[0.32, 0.21, 0.008]} color={COLOR.laptop} />
+        <Box position={[0, LID.height / 2, 0]} size={[LID.width, LID.height, 0.008]} color={COLOR.laptop} />
         {/* kept under the bloom threshold so the full-screen shot stays sharp */}
-        <mesh position={[0, 0.105, -0.0045]} rotation={[0, Math.PI, 0]}>
+        <mesh position={[0, LID.height / 2, -0.0045]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[SCREEN_SIZE.width, SCREEN_SIZE.height]} />
           <meshBasicMaterial color={mine ? '#0b0a10' : COLOR.screen} />
         </mesh>
-        {sticker && <LaptopSticker kind={sticker} position={[0, 0.105, -0.0055]} rotationY={Math.PI} onScreen />}
+        {/* draws itself over the black screen in its own pass */}
+        {mine && <DesktopScreen />}
+        {sticker && <LaptopSticker kind={sticker} position={[0, LID.height / 2, -0.0055]} rotationY={Math.PI} onScreen />}
       </group>
     </group>
   )

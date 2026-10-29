@@ -25,17 +25,19 @@ export const MY_TABLE = { position: [0, 0, 0] as Vec3, size: [1.2, 0.8] as [numb
 export const ME = { position: [0, 0, -0.83] as Vec3, rotationY: 0 }
 // tilt in radians (~15deg)
 export const LAPTOP = { position: [0, TABLE_HEIGHT, -0.1] as Vec3, tilt: 0.26 }
-// lit display area
-export const SCREEN_SIZE = { width: 0.3, height: 0.19 }
+// lit display area. 16:10, same as the desktop (see desktop/screen.ts)
+export const SCREEN_SIZE = { width: 0.3, height: 0.1875 }
+// the lid, with a 5mm bezel around the display
+export const LID = { width: SCREEN_SIZE.width + 0.01, height: SCREEN_SIZE.height + 0.01 }
 
 // my screen's center + normal in world space.
-// keep in sync with Laptop() in CafeBlockout (hinge 0.11 back, display 0.105 up the lid)
+// keep in sync with Laptop() in CafeBlockout (hinge 0.11 back, display centered on the lid)
 export const MY_SCREEN = (() => {
   const [x, y, z] = LAPTOP.position
   const cos = Math.cos(LAPTOP.tilt)
   const sin = Math.sin(LAPTOP.tilt)
   const hinge: Vec3 = [x, y + 0.015, z + 0.11]
-  const up = 0.105
+  const up = LID.height / 2
   const front = -0.0045
   return {
     center: [hinge[0], hinge[1] + up * cos - front * sin, hinge[2] + up * sin + front * cos] as Vec3,

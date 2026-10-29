@@ -7,41 +7,33 @@
   --accent: #b48cff;
   --select: rgb(160 120 255 / 0.45);
 
+  /* size and position come from Desktop.tsx (screen.ts) */
   position: fixed;
-  inset: 0;
+  left: 0;
+  top: 0;
   overflow: hidden;
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: 13px;
   background: #2a1d3d;
   user-select: none;
-  /* so the wallpaper can size itself off the desktop, not the window */
+  /* lets the wallpaper size off the desktop instead of the viewport */
   container-type: size;
-  /* warped onto the laptop screen by handoff.ts until you're all the way in */
-  transform-origin: 0 0;
-  will-change: transform;
-  pointer-events: none;
-}
-
-/* dims it from far away (--dim from handoff.ts) */
-.desktop::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1000000;
-  background: #000;
-  opacity: var(--dim, 0);
+  /* shown once the camera lands (handoff.ts). fades in, hides instantly */
+  opacity: 0;
   pointer-events: none;
 }
 
 .desktop-active .desktop {
+  opacity: 1;
   pointer-events: auto;
+  transition: opacity 0.2s ease-out;
 }
 
-/* wallpaper: as small as it can be while still covering the screen, then shifted toward
-   Kindred (--focus-x/y, 0-1 in the image) as far as the crop allows. the small copy shows
-   until the big one loads */
-.desktop::before {
+/* wallpaper: smallest size that still covers, shifted toward --focus-x/y (0-1) as far as the
+   crop allows. small copy shows until the full one loads. a real element instead of
+   ::before because the snapshot can't capture pseudo-element images */
+.wallpaper {
   --aspect: 2;
   --focus-x: 0.44;
   --focus-y: 0.4;
@@ -77,10 +69,13 @@
   align-items: center;
   gap: 18px;
   padding: 0 14px;
-  background: var(--glass);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  /* no background, like current macOS. shadow for contrast */
   font-size: 13px;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+}
+
+.menu-mark svg {
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.45));
 }
 
 .menu-mark {
@@ -195,6 +190,8 @@
 }
 
 .light {
+  display: grid;
+  place-items: center;
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -202,6 +199,30 @@
 
 .window .light {
   background: rgb(255 255 255 / 0.18);
+}
+
+/* traffic light glyphs, visible on hover */
+.light svg {
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  fill: rgb(0 0 0 / 0.55);
+  stroke: rgb(0 0 0 / 0.55);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+.close svg,
+.minimize svg {
+  fill: none;
+}
+
+.zoom svg {
+  stroke: none;
+}
+
+.traffic-lights:hover .light svg {
+  opacity: 1;
 }
 
 .window.focused .close,
@@ -237,9 +258,132 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  /* scrolling a window shouldn't scroll the page behind it (that's how you leave the desktop) */
+  /* don't chain to the page scroll, that's what leaves the desktop */
   overscroll-behavior: contain;
   user-select: text;
+}
+
+/* resize handles */
+
+.resize {
+  position: absolute;
+  z-index: 2;
+}
+
+.resize-n,
+.resize-s {
+  left: 10px;
+  right: 10px;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.resize-e,
+.resize-w {
+  top: 10px;
+  bottom: 10px;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+.resize-n {
+  top: 0;
+}
+
+.resize-s {
+  bottom: 0;
+}
+
+.resize-e {
+  right: 0;
+}
+
+.resize-w {
+  left: 0;
+}
+
+.resize-ne,
+.resize-nw,
+.resize-se,
+.resize-sw {
+  width: 12px;
+  height: 12px;
+}
+
+.resize-ne {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+
+.resize-sw {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+.resize-nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+.resize-se {
+  right: 0;
+  bottom: 0;
+  cursor: nwse-resize;
+}
+
+/* full screen: window fills the area under the menu bar. title bar and dock hide and come
+   back when you hover the top or bottom edge */
+
+.menu-zone,
+.dock-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 100000;
+}
+
+.menu-zone {
+  top: 0;
+}
+
+.dock-zone {
+  bottom: 0;
+}
+
+.full-screen .dock-zone {
+  height: 6px;
+}
+
+.window.maximized .title-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 4;
+  background: var(--window);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  transform: translateY(-100%);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.title-reveal {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 3;
+  height: 6px;
+}
+
+/* reveal on the top strip or the menu bar, stay while hovered */
+.window.maximized:has(.title-reveal:hover, .title-bar:hover) .title-bar,
+.full-screen:has(.menu-zone:hover) .window.maximized .title-bar {
+  transform: none;
+}
+
+.desktop-active .full-screen .dock-zone:not(:hover) .dock,
+.full-screen .dock-zone:not(:hover) .dock {
+  transform: translate(-50%, calc(100% + 12px));
 }
 
 /* dock */
@@ -253,12 +397,18 @@
   align-items: flex-end;
   gap: 6px;
   padding: 6px 8px 4px;
-  transform: translateX(-50%);
+  /* hidden below the screen until arrival (not in the snapshot) */
+  transform: translate(-50%, calc(100% + 12px));
   background: var(--glass);
   border: 1px solid var(--window-border);
   border-radius: 20px;
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
+}
+
+.desktop-active .dock {
+  transform: translateX(-50%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s;
 }
 
 .dock-item {
@@ -556,9 +706,41 @@
   border-bottom: 1px solid rgb(255 255 255 / 0.06);
 }
 
-.resume iframe {
+.resume-view {
+  position: relative;
   flex: 1;
+  background: #f4f2ee;
+}
+
+/* placeholder page under the pdf iframe, shows in the snapshot instead */
+.resume-page {
+  position: absolute;
+  inset: 16px 12%;
+  padding: 28px 32px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.15);
+}
+
+.resume-page span {
+  display: block;
+  height: 7px;
+  margin-bottom: 11px;
+  border-radius: 4px;
+  background: #d9d6cf;
+}
+
+.resume-page span:first-child {
+  width: 40%;
+  height: 14px;
+  margin: 0 auto 22px;
+  background: #9a968e;
+}
+
+.resume iframe {
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
   border: 0;
   background: #fff;
 }
@@ -569,8 +751,13 @@
   }
 
   .dock-item,
-  .dock-item:hover {
+  .dock-item:hover,
+  .desktop-active .dock {
     transition: none;
+  }
+
+  .dock-item,
+  .dock-item:hover {
     transform: none;
   }
 }

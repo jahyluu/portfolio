@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
-import { updateHandoff, type ScreenRegion } from '../handoff'
+import { updateHandoff } from '../handoff'
+import { screenRect } from '../desktop/screen'
 import { scroll, scrollToProgress } from '../scroll'
-import { CAMERA_PATH, LAPTOP, MY_SCREEN, SCREEN_SIZE, type Vec3 } from './layout'
+import { CAMERA_PATH, MY_SCREEN, SCREEN_SIZE, type Vec3 } from './layout'
 
 // lower = floatier
 const SMOOTHING = 5
-// < 1 so the screen overfills the viewport and the bezel never shows
-const FILL = 0.97
+// minimum speed (progress/sec). damping alone never quite reaches the target, this makes
+// the camera actually land so the desktop lines up
+const MIN_SPEED = 0.03
 // dev: keys 1-5 jump to these
 const PREVIEW_STOPS = [0, 0.25, 0.5, 0.75, 1]
 
@@ -20,23 +22,19 @@ export function CameraRig() {
   const smoothed = useRef(scroll.progress)
 
   const spiral = useMemo(
-    () => makeSpiral(fullScreenPosition(camera.fov, width / height)),
+    () => makeSpiral(fullScreenPosition(camera.fov, width, height)),
     [camera.fov, width, height],
   )
-
-  // the part of my screen that ends up filling the window, where the desktop gets drawn
-  const region = useMemo(() => screenRegion(width / height), [width, height])
 
   const position = useMemo(() => new Vector3(), [])
   const target = useMemo(() => new Vector3(), [])
 
   useFrame((_, delta) => {
-    smoothed.current = MathUtils.damp(smoothed.current, scroll.progress, SMOOTHING, delta)
+    smoothed.current = easeToward(smoothed.current, scroll.progress, delta)
     spiral(smoothed.current, position, target)
     camera.position.copy(position)
     camera.lookAt(target)
-    camera.updateMatrixWorld()
-    updateHandoff(smoothed.current, camera, region, { width, height })
+    updateHandoff(smoothed.current)
   })
 
   useEffect(() => {
@@ -50,6 +48,14 @@ export function CameraRig() {
   }, [])
 
   return null
+}
+
+function easeToward(current: number, target: number, delta: number) {
+  const gap = target - current
+  const minStep = MIN_SPEED * delta
+  if (Math.abs(gap) <= minStep) return target
+  const eased = MathUtils.damp(current, target, SMOOTHING, delta)
+  return Math.abs(eased - current) < minStep ? current + Math.sign(gap) * minStep : eased
 }
 
 function toVector([x, y, z]: Vec3) {
@@ -86,28 +92,11 @@ function makeSpiral(end: Vec3) {
   }
 }
 
-// how much of the screen is in view at the end, in meters. same shape as the window.
-// wide windows are limited by the screen's width, tall ones by its height
-function visibleHeight(aspect: number) {
-  return Math.min(SCREEN_SIZE.height, SCREEN_SIZE.width / aspect) * FILL
-}
 
-function screenRegion(aspect: number): ScreenRegion {
-  const height = visibleHeight(aspect)
-  return {
-    center: toVector(MY_SCREEN.center),
-    // facing the screen you look along +z, so its right is -x
-    right: new Vector3(-1, 0, 0),
-    up: new Vector3(0, Math.cos(LAPTOP.tilt), Math.sin(LAPTOP.tilt)),
-    normal: toVector(MY_SCREEN.normal),
-    width: height * aspect,
-    height,
-  }
-}
-
-// distance where the screen fills the viewport
-function fullScreenPosition(fovDegrees: number, aspect: number): Vec3 {
-  const visible = visibleHeight(aspect)
+// final camera position: square on to the screen, at the distance where the screen is
+// exactly as tall as the desktop rect
+function fullScreenPosition(fovDegrees: number, viewportWidth: number, viewportHeight: number): Vec3 {
+  const visible = (SCREEN_SIZE.height * viewportHeight) / screenRect(viewportWidth, viewportHeight).height
   const distance = visible / (2 * Math.tan(MathUtils.degToRad(fovDegrees) / 2))
   const [cx, cy, cz] = MY_SCREEN.center
   const [nx, ny, nz] = MY_SCREEN.normal

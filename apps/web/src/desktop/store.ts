@@ -1,10 +1,11 @@
 import { useSyncExternalStore } from 'react'
 import { APPS, type AppId } from './apps'
+import { screenRect } from './screen'
 
 export type DesktopWindow = {
   id: string
   app: AppId
-  // which item, for apps that open more than one window (a project)
+  // for apps with more than one window (projects)
   item?: string
   x: number
   y: number
@@ -21,8 +22,8 @@ type State = {
   selectedIcon: string | null
 }
 
-// module-level on purpose: survives scrolling out to the cafe and back, and resets on reload.
-// don't move this into localStorage/sessionStorage, those would survive a reload
+// module-level on purpose: survives scrolling out and back, resets on reload.
+// not localStorage/sessionStorage, those would survive a reload
 let state: State = { windows: [], focused: null, selectedIcon: null }
 let topZ = 1
 const listeners = new Set<() => void>()
@@ -58,11 +59,14 @@ export const desktop = {
       set({ focused: id })
       return
     }
-    const [width, height] = APPS[app].size
-    // cascade new windows so they don't stack exactly on top of each other
+    const screen = screenRect()
+    // fit smaller screens, leaving room for the menu bar and dock
+    const width = Math.min(APPS[app].size[0], screen.width - 48)
+    const height = Math.min(APPS[app].size[1], screen.height - MENU_BAR_HEIGHT - 96)
+    // cascade so new windows don't land exactly on top of each other
     const n = state.windows.length % 6
-    const x = Math.max(16, Math.min(window.innerWidth - width - 16, 140 + n * 32))
-    const y = Math.max(MENU_BAR_HEIGHT + 12, Math.min(window.innerHeight - height - 100, 70 + n * 32))
+    const x = Math.max(16, Math.min(screen.width - width - 16, 120 + n * 32))
+    const y = Math.max(MENU_BAR_HEIGHT + 12, Math.min(screen.height - height - 84, 56 + n * 32))
     set({
       windows: [...state.windows, { id, app, item, x, y, width, height, z: ++topZ, minimized: false, maximized: false }],
       focused: id,
@@ -82,6 +86,10 @@ export const desktop = {
 
   move(id: string, x: number, y: number) {
     update(id, { x, y })
+  },
+
+  setRect(id: string, rect: { x: number; y: number; width: number; height: number }) {
+    update(id, rect)
   },
 
   minimize(id: string) {

@@ -4,6 +4,7 @@ import { BackWall } from './BackWall'
 import { Bar } from './Bar'
 import { CafeBlockout } from './CafeBlockout'
 import { CameraRig } from './CameraRig'
+import { PauseOnDesktop } from './DesktopScreen'
 import { Lighting } from './Lighting'
 import { Outside } from './Outside'
 import { Paintings } from './Paintings'
@@ -21,6 +22,7 @@ export function Experience() {
         {/* warm haze */}
         <fog attach="fog" args={[COLOR.haze, 9, 26]} />
         <CameraRig />
+        <PauseOnDesktop />
         <Lighting />
         <Room />
         <Outside />
