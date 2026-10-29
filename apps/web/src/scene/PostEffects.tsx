@@ -4,6 +4,7 @@ import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postp
 import { ToneMappingMode, type BloomEffect } from 'postprocessing'
 import { MathUtils } from 'three'
 import { smoothedScroll } from '../handoff'
+import { LOW_POWER } from '../quality'
 
 // bloom fades out as the camera gets close, otherwise the lit laptop fills the frame and
 // the glow turns into haze
@@ -18,7 +19,7 @@ export function PostEffects() {
     bloom.current.intensity = MathUtils.lerp(BLOOM.wide, BLOOM.close, close)
   })
   return (
-    <EffectComposer multisampling={4}>
+    <EffectComposer multisampling={LOW_POWER ? 0 : 4}>
       {/* threshold 1, so only colors pushed past white glow */}
       <Bloom ref={bloom} mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.2} intensity={BLOOM.wide} />
       {/* AgX so highlights roll off instead of clipping */}

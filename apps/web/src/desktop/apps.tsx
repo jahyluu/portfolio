@@ -61,7 +61,7 @@ function Finder() {
   )
 }
 
-function ProjectDetails({ item }: { item?: string }) {
+export function ProjectDetails({ item }: { item?: string }) {
   const project = PROJECTS.find((p) => p.id === item)
   if (!project) return null
   return (
@@ -99,7 +99,7 @@ function ProjectDetails({ item }: { item?: string }) {
   )
 }
 
-function About() {
+export function About() {
   return (
     <article className="doc">
       <header className="about-header">
@@ -128,7 +128,7 @@ function About() {
   )
 }
 
-function Stack() {
+export function Stack() {
   return (
     <article className="doc">
       {STACK.map(({ group, items }) => (
@@ -168,7 +168,7 @@ function Resume() {
   )
 }
 
-function Contact() {
+export function Contact() {
   const [copied, setCopied] = useState(false)
   const copy = () => {
     navigator.clipboard?.writeText(PROFILE.email).then(() => {

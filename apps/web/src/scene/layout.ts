@@ -46,6 +46,25 @@ export const MY_SCREEN = (() => {
 })()
 export const PENDANT = { position: [0, 2.45, 0] as Vec3 }
 
+// my phone, lying on the table past my coffee, top pointing away from me so I could read it
+export const PHONE = {
+  position: [-0.31, TABLE_HEIGHT, 0.07] as Vec3,
+  yaw: -0.18,
+  body: { width: 0.072, length: 0.152, thickness: 0.008 },
+}
+// 9:19.5, same as the phone UI (see desktop/screen.ts)
+export const PHONE_SCREEN = { width: 0.066, height: 0.066 * (19.5 / 9) }
+
+// phone screen center/normal/top, world space
+export const MY_PHONE = (() => {
+  const [x, y, z] = PHONE.position
+  return {
+    center: [x, y + PHONE.body.thickness + 0.0004, z] as Vec3,
+    normal: [0, 1, 0] as Vec3,
+    top: [Math.sin(PHONE.yaw), 0, Math.cos(PHONE.yaw)] as Vec3,
+  }
+})()
+
 // --- other tables
 // bar on the north wall, booth on the east window, poker + study tables between
 // mine and the booth, sleeper's table south of mine, two small tables on the west wall

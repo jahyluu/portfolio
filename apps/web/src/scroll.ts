@@ -2,8 +2,21 @@
 // the scene just reads it each frame. also mirrored to --scroll for css
 export const scroll = { progress: 0 }
 
+// tallest viewport (100lvh). innerHeight shrinks when the safari toolbars come back, which
+// moved the end of the scroll and kicked you off the phone
+let tallest: HTMLElement | null = null
+function largeViewportHeight() {
+  if (!tallest) {
+    tallest = document.createElement('div')
+    tallest.style.cssText = 'position: absolute; top: 0; width: 0; height: 100lvh; visibility: hidden; pointer-events: none'
+    document.body.appendChild(tallest)
+  }
+  // old browsers without lvh
+  return Math.max(tallest.offsetHeight, window.innerHeight)
+}
+
 function maxScroll() {
-  return document.documentElement.scrollHeight - window.innerHeight
+  return document.documentElement.scrollHeight - largeViewportHeight()
 }
 
 function update() {

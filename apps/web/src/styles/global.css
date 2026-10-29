@@ -18,6 +18,11 @@ body,
   margin: 0;
 }
 
+/* no pull-to-refresh or bounce on phones, the scroll drives the camera */
+html {
+  overscroll-behavior-y: none;
+}
+
 body {
   background: var(--night);
   color: var(--cream);
@@ -47,6 +52,12 @@ body {
 .hero p {
   margin: 4px 0 0;
   opacity: 0.75;
+}
+
+/* no webgl, nothing to go back to */
+.no-webgl .menu-action,
+.no-webgl .cafe-icon {
+  display: none !important;
 }
 
 /* taller = slower camera */

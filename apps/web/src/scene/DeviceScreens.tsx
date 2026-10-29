@@ -1,0 +1,202 @@
+import { useEffect, useMemo } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { CanvasTexture, Euler, InstancedMesh, LessEqualDepth, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Quaternion, Scene, Sphere, SRGBColorSpace, TextureLoader, Vector3, type Texture } from 'three'
+import { DISPLAYS, screenRect, type Device } from '../desktop/screen'
+import { getSnapshot, useSnapshotVersion } from '../desktop/snapshot'
+import { smoothedScroll, useDesktopActive } from '../handoff'
+import { LAPTOP, MY_PHONE, MY_SCREEN, MY_TABLE, PHONE_SCREEN, SCREEN_SIZE, TABLE_HEIGHT } from './layout'
+
+// slightly dimmed from far away so it doesn't glow, full brightness on landing
+const BRIGHTNESS = { far: 0.82, fadeFrom: 0.6, fadeTo: 0.95 }
+
+type ScreenProps = {
+  device: Device
+  position: Vector3
+  quaternion: Quaternion
+  width: number
+  height: number
+  // shown when this isn't the device the camera ends on
+  idle?: () => Texture | null
+}
+
+// shows the latest snapshot. drawn in its own pass after post so tone mapping doesn't touch
+// the colors. depth comes from Occluders
+function DeviceScreen({ device, position, quaternion, width, height, idle }: ScreenProps) {
+  const version = useSnapshotVersion()
+  const anisotropy = useThree((state) => state.gl.capabilities.getMaxAnisotropy())
+  const size = useThree((state) => state.size)
+  const rect = screenRect(size.width, size.height)
+  const active = rect.device === device
+
+  const { scene, material, mesh } = useMemo(() => {
+    // sits right on the black glass, nudge it forward
+    const material = new MeshBasicMaterial({ color: '#000000', fog: false, depthFunc: LessEqualDepth, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8 })
+    const mesh = new Mesh(new PlaneGeometry(width, height), material)
+    mesh.position.copy(position)
+    mesh.quaternion.copy(quaternion)
+    const scene = new Scene()
+    scene.add(mesh)
+    return { scene, material, mesh }
+  }, [position, quaternion, width, height])
+
+  // match the UI rect's aspect exactly (it's whole pixels)
+  useEffect(() => {
+    mesh.scale.x = active ? rect.width / rect.height / DISPLAYS[device].aspect : 1
+  }, [mesh, active, rect.width, rect.height, device])
+
+  useEffect(() => {
+    let texture: Texture | null = null
+    if (active) {
+      const image = getSnapshot()
+      if (image) {
+        texture = new CanvasTexture(image)
+        texture.colorSpace = SRGBColorSpace
+        texture.anisotropy = Math.min(8, anisotropy)
+      }
+    } else {
+      texture = idle?.() ?? null
+    }
+    const previous = material.map
+    material.map = texture
+    material.needsUpdate = true
+    if (previous && previous !== texture && previous.userData.disposable !== false) previous.dispose()
+  }, [version, active, material, anisotropy, idle])
+
+  // after the EffectComposer (priority 1) and Occluders (2)
+  useFrame(({ gl, camera }) => {
+    if (!material.map) return
+    const t = (smoothedScroll.progress - BRIGHTNESS.fadeFrom) / (BRIGHTNESS.fadeTo - BRIGHTNESS.fadeFrom)
+    material.color.setScalar(active ? BRIGHTNESS.far + (1 - BRIGHTNESS.far) * Math.min(Math.max(t, 0), 1) : BRIGHTNESS.far)
+    const autoClear = gl.autoClear
+    gl.autoClear = false
+    gl.setRenderTarget(null)
+    gl.render(scene, camera)
+    gl.autoClear = autoClear
+  }, 3)
+
+  return null
+}
+
+// stuff around my table that can get between the camera and a screen (me, chair, cup, the
+// laptop in front of the phone). drawn depth-only before the screens so they get covered
+const OCCLUDER_LAYER = 1
+const NEAR_TABLE = new Sphere(new Vector3(MY_TABLE.position[0], TABLE_HEIGHT, MY_TABLE.position[2]), 1.2)
+const depthOnly = new MeshBasicMaterial({ colorWrite: false })
+
+export function Occluders() {
+  const scene = useThree((state) => state.scene)
+
+  useEffect(() => {
+    const tag = () => {
+      const bounds = new Sphere()
+      scene.traverse((object) => {
+        if (!(object instanceof Mesh) || !object.visible) return
+        if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere()
+        bounds.copy(object.geometry.boundingSphere!).applyMatrix4(object.matrixWorld)
+        // skip big instanced sets (rain, gravel)
+        if (object instanceof InstancedMesh && bounds.radius > 1) return
+        if (bounds.center.distanceTo(NEAR_TABLE.center) < NEAR_TABLE.radius) object.layers.enable(OCCLUDER_LAYER)
+      })
+    }
+    // wait for everything to mount
+    const timer = setTimeout(tag, 500)
+    return () => clearTimeout(timer)
+  }, [scene])
+
+  useFrame(({ gl, camera }) => {
+    const { mask } = camera.layers
+    const { autoClear } = gl
+    const shadows = gl.shadowMap.autoUpdate
+    // otherwise three clears the frame for the background color
+    const background = scene.background
+    scene.background = null
+    camera.layers.set(OCCLUDER_LAYER)
+    scene.overrideMaterial = depthOnly
+    gl.shadowMap.autoUpdate = false
+    gl.autoClear = false
+    gl.setRenderTarget(null)
+    gl.clearDepth()
+    gl.render(scene, camera)
+    gl.autoClear = autoClear
+    gl.shadowMap.autoUpdate = shadows
+    scene.overrideMaterial = null
+    scene.background = background
+    camera.layers.mask = mask
+  }, 2)
+
+  return null
+}
+
+// same transform as the lid in Laptop (CafeBlockout)
+const LAPTOP_POSE = {
+  position: new Vector3(...MY_SCREEN.center),
+  quaternion: new Quaternion().setFromEuler(new Euler(LAPTOP.tilt, 0, 0)).multiply(new Quaternion().setFromEuler(new Euler(0, Math.PI, 0))),
+}
+
+// lying flat: plane faces up, its top edge along the phone's top
+const PHONE_POSE = (() => {
+  const top = new Vector3(...MY_PHONE.top)
+  const normal = new Vector3(...MY_PHONE.normal)
+  const right = top.clone().cross(normal)
+  return {
+    position: new Vector3(...MY_PHONE.center),
+    quaternion: new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(right, top, normal)),
+  }
+})()
+
+// on phones the laptop just shows the wallpaper, cropped to 16:10 around Kindred
+// (same focus point as the desktop wallpaper css)
+let laptopWallpaper: Texture | null = null
+function wallpaperTexture() {
+  if (laptopWallpaper) return laptopWallpaper
+  laptopWallpaper = new TextureLoader().load('/wallpaper.webp')
+  laptopWallpaper.colorSpace = SRGBColorSpace
+  laptopWallpaper.userData.disposable = false
+  const imageAspect = 2
+  laptopWallpaper.repeat.set(DISPLAYS.laptop.aspect / imageAspect, 1)
+  laptopWallpaper.offset.set(Math.min(Math.max(0.44 - laptopWallpaper.repeat.x / 2, 0), 1 - laptopWallpaper.repeat.x), 0)
+  return laptopWallpaper
+}
+
+export function LaptopScreen() {
+  return <DeviceScreen device="laptop" {...LAPTOP_POSE} width={SCREEN_SIZE.width} height={SCREEN_SIZE.height} idle={wallpaperTexture} />
+}
+
+// off (black glass, see Phone.tsx) unless the camera ends on it
+export function PhoneScreen() {
+  return <DeviceScreen device="phone" {...PHONE_POSE} width={PHONE_SCREEN.width} height={PHONE_SCREEN.height} />
+}
+
+// stop rendering the cafe while you're on the desktop/phone UI, it's covered apart from the
+// device's edges. scroll or resize wakes it up. a new snapshot renders one frame so the
+// texture is already uploaded when you leave
+export function PauseOnDesktop() {
+  const setFrameloop = useThree((state) => state.setFrameloop)
+  const invalidate = useThree((state) => state.invalidate)
+  const active = useDesktopActive()
+  const version = useSnapshotVersion()
+
+  useEffect(() => {
+    if (active) invalidate()
+  }, [version, active, invalidate])
+
+  useEffect(() => {
+    if (!active) return
+    let timer = setTimeout(() => setFrameloop('demand'), 600)
+    const wake = () => {
+      setFrameloop('always')
+      clearTimeout(timer)
+      timer = setTimeout(() => setFrameloop('demand'), 600)
+    }
+    window.addEventListener('scroll', wake, { passive: true })
+    window.addEventListener('resize', wake)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('scroll', wake)
+      window.removeEventListener('resize', wake)
+      setFrameloop('always')
+    }
+  }, [active, setFrameloop])
+
+  return null
+}

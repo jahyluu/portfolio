@@ -23,6 +23,11 @@ export function updateHandoff(progress: number) {
   listeners.forEach((listener) => listener())
 }
 
+// no webgl, skip straight to the desktop/phone
+export function skipToDesktop() {
+  updateHandoff(1)
+}
+
 export function useDesktopActive() {
   return useSyncExternalStore(
     (listener) => {

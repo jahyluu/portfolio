@@ -104,6 +104,17 @@ export function ContactTile({ size = 64 }: { size?: number }) {
   )
 }
 
+// phone home screen: goes back out to the cafe
+export function CafeTile({ size = 64 }: { size?: number }) {
+  return (
+    <Tile from="#c99a6b" to="#8a5a3a" size={size}>
+      <path d="M15 27h27v9a11 11 0 0 1-11 11h-5a11 11 0 0 1-11-11z" fill="#fff" />
+      <path d="M42 30h3a5 5 0 0 1 0 10h-3" fill="none" stroke="#fff" strokeWidth="3.5" />
+      <path d="M23 13c-2 3 2 4 0 8M31 13c-2 3 2 4 0 8" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+    </Tile>
+  )
+}
+
 // menu bar apple icon
 export function AppleIcon() {
   return (

@@ -2,15 +2,18 @@ import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
 import { updateHandoff } from '../handoff'
-import { screenRect } from '../desktop/screen'
+import { deviceFor, screenRect, type Device } from '../desktop/screen'
 import { scroll, startOnDesktop } from '../scroll'
-import { CAMERA_PATH, MY_SCREEN, SCREEN_SIZE, type Vec3 } from './layout'
+import { CAMERA_PATH, MY_PHONE, MY_SCREEN, PHONE_SCREEN, SCREEN_SIZE, type Vec3 } from './layout'
 
 // lower = floatier
 const SMOOTHING = 5
 // minimum speed (progress/sec). damping alone never quite reaches the target, this makes
 // the camera actually land so the desktop lines up
 const MIN_SPEED = 0.03
+// phone mode: turn off the spiral toward my phone from here (scroll progress)
+const PHONE_TURN_FROM = 0.6
+const UP = new Vector3(0, 1, 0)
 // camera follows the spiral in layout.ts based on scroll
 export function CameraRig() {
   const camera = useThree((state) => state.camera) as PerspectiveCamera
@@ -19,9 +22,15 @@ export function CameraRig() {
   // #desktop starts at the end instead of spiraling in from the cafe
   const smoothed = useRef(startOnDesktop ? 1 : scroll.progress)
 
+  const device = deviceFor(width, height)
   const spiral = useMemo(
-    () => makeSpiral(fullScreenPosition(camera.fov, width, height)),
+    () => makeSpiral(fullScreenPosition(camera.fov, width, height, 'laptop')),
     [camera.fov, width, height],
+  )
+  // phone end pose. up = the phone's top so it reads upright
+  const phoneEnd = useMemo(
+    () => device === 'phone' ? { position: toVector(fullScreenPosition(camera.fov, width, height, 'phone')), target: toVector(MY_PHONE.center), up: toVector(MY_PHONE.top) } : null,
+    [device, camera.fov, width, height],
   )
 
   const position = useMemo(() => new Vector3(), [])
@@ -30,6 +39,14 @@ export function CameraRig() {
   useFrame((_, delta) => {
     smoothed.current = easeToward(smoothed.current, scroll.progress, delta)
     spiral(smoothed.current, position, target)
+    camera.up.copy(UP)
+    if (phoneEnd) {
+      const turn = MathUtils.smootherstep(smoothed.current, PHONE_TURN_FROM, 1)
+      position.lerp(phoneEnd.position, turn)
+      // aim at the phone early or it swings in from the edge
+      target.lerp(phoneEnd.target, MathUtils.smootherstep(smoothed.current, PHONE_TURN_FROM, 0.85))
+      camera.up.lerp(phoneEnd.up, turn).normalize()
+    }
     camera.position.copy(position)
     camera.lookAt(target)
     updateHandoff(smoothed.current)
@@ -83,10 +100,11 @@ function makeSpiral(end: Vec3) {
 
 // final camera position: square on to the screen, at the distance where the screen is
 // exactly as tall as the desktop rect
-function fullScreenPosition(fovDegrees: number, viewportWidth: number, viewportHeight: number): Vec3 {
-  const visible = (SCREEN_SIZE.height * viewportHeight) / screenRect(viewportWidth, viewportHeight).height
+function fullScreenPosition(fovDegrees: number, viewportWidth: number, viewportHeight: number, device: Device): Vec3 {
+  const [screenHeight, { center, normal }] = device === 'phone' ? [PHONE_SCREEN.height, MY_PHONE] : [SCREEN_SIZE.height, MY_SCREEN]
+  const visible = (screenHeight * viewportHeight) / screenRect(viewportWidth, viewportHeight, device).height
   const distance = visible / (2 * Math.tan(MathUtils.degToRad(fovDegrees) / 2))
-  const [cx, cy, cz] = MY_SCREEN.center
-  const [nx, ny, nz] = MY_SCREEN.normal
+  const [cx, cy, cz] = center
+  const [nx, ny, nz] = normal
   return [cx + nx * distance, cy + ny * distance, cz + nz * distance]
 }

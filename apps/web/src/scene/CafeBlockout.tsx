@@ -25,7 +25,7 @@ import { CAST, Customer, Sleeper, type Action, type Look } from './Customer'
 import { Me } from './Me'
 import { StringLights } from './StringLights'
 import { Box, Chair } from './primitives'
-import { DesktopScreen } from './DesktopScreen'
+import { LaptopScreen } from './DeviceScreens'
 import { BoxGeometry, Color, MeshStandardMaterial } from 'three'
 import { RoundedBox } from '@react-three/drei'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -267,7 +267,7 @@ function WestTables() {
 }
 
 // faces +z
-// mine: shows the desktop (DesktopScreen)
+// mine: shows the desktop (LaptopScreen)
 type LaptopProps = { position: Vec3; rotationY?: number; sticker?: StickerKind; mine?: boolean }
 
 // key widths in u, 15u per row. rows go from the hinge (+z) toward the user
@@ -337,7 +337,7 @@ function Laptop({ position, rotationY = 0, sticker, mine = false }: LaptopProps)
           <meshBasicMaterial color={mine ? '#0b0a10' : COLOR.screen} />
         </mesh>
         {/* draws itself over the black screen in its own pass */}
-        {mine && <DesktopScreen />}
+        {mine && <LaptopScreen />}
         {sticker && <LaptopSticker kind={sticker} position={[0, LID.height / 2, -0.0055]} rotationY={Math.PI} onScreen />}
       </group>
     </group>

@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 import type { SpotLight } from 'three'
 import { DOWNLIGHTS, MY_SCREEN, PENDANT, type Vec3 } from './layout'
 import { COLOR } from './palette'
+import { LOW_POWER } from '../quality'
 
 // master brightness, bump up if the room looks too dark
 export const BRIGHTNESS = 1
@@ -64,7 +65,7 @@ function Spot({ position, intensity, angle = 0.8, penumbra = 1, shadows = false 
       distance={8}
       decay={2}
       castShadow={shadows}
-      shadow-mapSize={[1024, 1024]}
+      shadow-mapSize={LOW_POWER ? [512, 512] : [1024, 1024]}
       shadow-normalBias={0.02}
     />
   )

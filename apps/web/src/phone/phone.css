@@ -1,0 +1,507 @@
+.phone {
+  --app-bg: #0f0d13;
+  --card: #1d1a24;
+  --line: rgb(255 255 255 / 0.07);
+  --text: #f1edf7;
+  --muted: rgb(241 237 247 / 0.6);
+  --accent: #b48cff;
+  --status-height: 28px;
+  --nav-height: 48px;
+
+  /* size and position from screen.ts */
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-family: Roboto, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  background: #2a1d3d;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  /* for cq units */
+  container-type: size;
+  /* fades in when the camera lands (handoff.ts) */
+  opacity: 0;
+  pointer-events: none;
+}
+
+.desktop-active .phone {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.2s ease-out;
+}
+
+:where(.phone) button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* status bar */
+
+.status-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--status-height);
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.status-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-icons svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.status-icons .battery {
+  width: 18px;
+  height: 18px;
+}
+
+/* home screen */
+
+.home {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--status-height) 10px var(--nav-height);
+  text-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+}
+
+.clock-widget {
+  display: flex;
+  flex-direction: column;
+  margin: 14cqh 0 auto 18px;
+}
+
+.clock-time {
+  font-size: 64px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.clock-date {
+  margin-top: 6px;
+  font-size: 15px;
+}
+
+.app-grid,
+.home-dock {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  row-gap: 18px;
+}
+
+.app-grid {
+  margin-bottom: 22px;
+}
+
+.home-dock {
+  margin-bottom: 14px;
+}
+
+.app-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.phone .wallpaper {
+  /* nudged right so the lamb fits */
+  --focus-x: 0.46;
+}
+
+.app-icon svg {
+  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.3));
+}
+
+.app-icon:active svg {
+  transform: scale(0.92);
+}
+
+.home-dock .app-icon span {
+  /* samsung hides dock labels */
+  display: none;
+}
+
+/* open apps */
+
+.tasks {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.task {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+.task.shown {
+  display: block;
+  pointer-events: auto;
+}
+
+.task-screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--app-bg);
+}
+
+.view-app .task.shown .task-screen {
+  animation: app-open 0.22s ease-out;
+}
+
+@keyframes app-open {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+/* recents: same task elements, as cards */
+
+.view-recents .tasks {
+  display: flex;
+  align-items: center;
+  gap: 6cqw;
+  padding: 0 14cqw;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  background: rgb(10 8 14 / 0.55);
+  backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+
+.view-recents .task {
+  position: relative;
+  inset: auto;
+  flex: 0 0 72cqw;
+  height: 72cqh;
+  scroll-snap-align: center;
+  touch-action: pan-x;
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
+}
+
+.view-recents .task.closing {
+  transform: translateY(-110%) !important;
+  opacity: 0;
+}
+
+.view-recents .task-screen {
+  inset: auto;
+  top: 0;
+  left: 0;
+  width: 100cqw;
+  height: 100cqh;
+  transform: scale(0.72);
+  transform-origin: 0 0;
+  border-radius: 34px;
+  pointer-events: none;
+}
+
+.task-label {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.recents-empty {
+  margin: auto;
+  color: var(--muted);
+}
+
+.close-all {
+  position: absolute;
+  bottom: calc(var(--nav-height) + 14px);
+  left: 50%;
+  z-index: 20;
+  translate: -50% 0;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12) !important;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* app layout */
+
+.page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--status-height) 0 var(--nav-height);
+  background: var(--app-bg);
+}
+
+.toolbar-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 52px;
+  padding: 0 18px;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.toolbar-compact span {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.page.scrolled .toolbar-compact span {
+  opacity: 1;
+}
+
+.toolbar-back {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-left: -10px;
+  border-radius: 50%;
+}
+
+.toolbar-back svg,
+.chevron,
+.nav-bar svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.toolbar-back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.page-body {
+  flex: 1;
+  overflow-y: auto;
+  /* don't scroll the page behind it (flies you back out to the cafe) */
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+/* scrolls away under the toolbar */
+.page-title {
+  display: flex;
+  align-items: center;
+  min-height: 22cqh;
+  margin: 0;
+  padding: 0 24px 12px;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+/* at least a screen tall so overscroll-behavior always kicks in */
+.page-content {
+  min-height: 100%;
+  padding: 0 12px 16px;
+}
+
+.page-content > .doc,
+.list,
+.resume-card {
+  margin: 0;
+  border-radius: 24px;
+  background: var(--card);
+}
+
+.page-content > .doc {
+  padding: 20px 20px 22px;
+}
+
+/* page title already has the name */
+.phone .project-header h1 {
+  display: none;
+}
+
+.phone .timeline li {
+  grid-template-columns: 1fr;
+}
+
+.phone .timeline .muted {
+  grid-column: 1;
+  grid-row: auto;
+}
+
+.list {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.list li + li {
+  border-top: 1px solid var(--line);
+  margin: 0 18px;
+}
+
+.list li + li button {
+  padding-inline: 0;
+}
+
+.list button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 18px;
+  text-align: left;
+}
+
+.list li:first-child button,
+.list li:first-child {
+  margin: 0;
+}
+
+.list button > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.list strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.list .muted {
+  font-size: 13px;
+}
+
+.chevron {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
+.subpage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  animation: slide-in 0.22s ease-out;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(30%);
+    opacity: 0;
+  }
+}
+
+.phone .button {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.phone .button.primary {
+  background: var(--accent);
+  color: #1b1326;
+}
+
+.phone .actions {
+  justify-content: center;
+}
+
+.resume-card {
+  padding: 18px;
+}
+
+.phone .resume-page {
+  position: relative;
+  inset: auto;
+  aspect-ratio: 8.5 / 11;
+  padding: 22px 24px;
+}
+
+.phone .resume-page span {
+  height: 6px;
+  margin-bottom: 9px;
+}
+
+/* nav bar, always there */
+
+.nav-bar {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: var(--nav-height);
+  padding: 0 28px;
+}
+
+.view-app .nav-bar {
+  background: var(--app-bg);
+}
+
+.nav-bar button {
+  display: grid;
+  place-items: center;
+}
+
+.nav-bar svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.8;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.4));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-app .task.shown .task-screen,
+  .subpage {
+    animation: none;
+  }
+
+  .view-recents .task {
+    transition: none;
+  }
+}

@@ -3,7 +3,9 @@
 My personal portfolio site. It opens on a cozy low-poly cafe on a rainy night: I'm sitting at a
 table in the middle of the room, working on a laptop. Scrolling spirals the camera down and around
 the room, over my shoulder and into the laptop, where the screen becomes a working Mac-style
-desktop with folders for my projects, about, tech stack, resume and contact info.
+desktop with folders for my projects, about, tech stack, resume and contact info. On a phone,
+the camera ends on the phone lying next to my coffee instead, and it opens into an Android-style
+home screen.
 
 ## The scroll
 
@@ -21,6 +23,9 @@ Scrolling back up leaves the desktop and pulls the camera back out into the cafe
 open on the desktop stays open: it shows on the laptop screen while you look around, and it's
 still there when you scroll back in. A page reload resets it.
 
+The 1 and 2 keys jump straight to the cafe or the desktop, the scroll cue doubles as a skip
+button, and `/#desktop` opens straight onto the desktop.
+
 ## The desktop
 
 **How the handoff works**
@@ -30,6 +35,8 @@ still there when you scroll back in. A page reload resets it.
   It's retaken in the background a moment after anything changes, so it's always current
 - When the camera lands, the live HTML desktop fades in over the snapshot. Both are fitted to
   the same whole-pixel rect, so they line up exactly and the swap isn't visible
+- The screen is drawn after the glow and color grading so its colors match the live desktop,
+  and anything near my table (my arms, the coffee) still passes in front of it
 - The 3D scene stops rendering while you're on the desktop and wakes up when you scroll
 
 **What's on it**
@@ -46,6 +53,27 @@ still there when you scroll back in. A page reload resets it.
 - Full screen fills everything under the menu bar. The title bar hides until you move to the
   top of the screen, and the dock hides until you move to the bottom
 
+## The phone
+
+Tall, narrow windows (phones, or a squeezed browser window) get the phone instead of the laptop.
+The camera follows the same spiral, then turns away from the laptop near the end and comes down
+over the phone on the table until its screen fills 95% of the window. The handoff works the same
+way as the desktop: a snapshot on the phone screen in the cafe, the live UI once the camera lands.
+
+- Samsung-style home screen: clock widget, app icons and a dock row over the wallpaper
+- Apps open full screen with a big title that scrolls away under a compact toolbar
+- Projects list that opens each project, About, Tech Stack, Contact and the resume (opens or
+  downloads the PDF, since phones don't show PDFs inline)
+- Nav bar that's always at the bottom, in Samsung's order: recents, home, back
+- Recents shows open apps as cards: tap one to switch, swipe it up to close, or close them all
+- A Café app that goes back out to the cafe
+- Open apps and scroll positions stay in memory like the desktop
+
+**On phones in general**
+- No pull-to-refresh or bounce while scrolling, and app scrolling doesn't leak into the page
+- Touchscreens get a lighter render: lower resolution, no MSAA and smaller shadow maps
+- Without WebGL the site skips the cafe and opens straight onto the desktop or phone UI
+
 ## The scene
 
 **Inside the cafe**
@@ -58,7 +86,7 @@ still there when you scroll back in. A page reload resets it.
   reader on the west wall, and someone asleep next to a spilled coffee that drips off the table
 - Cafe chairs with legs; empty ones are tucked half under their tables
 - Laptops with QWERTY keyboards and trackpads
-- My table: laptop, coffee with steam, a fruit tart, my backpack beside the chair
+- My table: laptop, phone, coffee with steam, a fruit tart, my backpack beside the chair
 - An ink-wash style pixel painting, a floor-to-ceiling storefront window and a glass door
 - Soft, warm lighting with shadows, glow and film-style color grading. The glow eases off as the
   camera gets close to the laptop so the close-up stays sharp
@@ -124,7 +152,8 @@ portfolio/
 │           │   ├── Customer.tsx      # the customers, their looks and idle loops
 │           │   ├── body.tsx          # shared character pieces (limbs, IK, hair)
 │           │   ├── Sneakers.tsx      # sneakers, loafers and sandals
-│           │   ├── DesktopScreen.tsx # desktop snapshot on my laptop screen
+│           │   ├── DeviceScreens.tsx # UI snapshots on my laptop and phone screens
+│           │   ├── Phone.tsx         # my phone on the table
 │           │   ├── Paintings.tsx     # framed art
 │           │   ├── EasterEggs.tsx    # clickable logos on the laptops
 │           │   ├── RainGlass.tsx     # rain running down the glass
@@ -136,11 +165,17 @@ portfolio/
 │           │   ├── apps.tsx          # what each window shows
 │           │   ├── content.ts        # projects, bio, experience, links
 │           │   ├── store.ts          # open windows (in memory, resets on reload)
-│           │   ├── screen.ts         # where the display sits in the window
-│           │   ├── snapshot.ts       # snapshot for the laptop screen
+│           │   ├── screen.ts         # laptop or phone, and where its display sits
+│           │   ├── snapshot.ts       # snapshot for the laptop/phone screen
 │           │   ├── icons.tsx
 │           │   └── desktop.css
+│           ├── phone/
+│           │   ├── PhoneUI.tsx       # status bar, home screen, apps, recents, nav bar
+│           │   ├── store.ts          # open apps (in memory, resets on reload)
+│           │   └── phone.css
 │           ├── handoff.ts       # cafe -> desktop handoff
+│           ├── quality.ts       # lighter render on phones, WebGL check
+│           ├── scroll.ts        # scroll progress, 1/2 shortcuts
 │           ├── overlay/         # HTML on top of the scene (name, title)
 │           ├── links.ts         # my profile links
 │           └── styles/
@@ -160,9 +195,10 @@ npm install
 npm run dev
 ```
 
-Then open the local URL Vite prints. In development, the number keys 1–5 jump to 0%, 25%, 50%,
-75% and 100% of the scroll (5 lands on the desktop), and a frame-rate counter shows in the top
-left.
+Then open the local URL Vite prints. In development a frame-rate counter shows in the top left.
+
+To try it on a real phone, run `npm run dev -- --host` and open the network URL Vite prints on a
+phone on the same Wi-Fi.
 
 Other scripts:
 
@@ -182,10 +218,10 @@ Other scripts:
 - [x] Window booth, cafe chairs, string lights
 - [ ] Remaining props: plants and vines inside, paintings on the south wall
 - [x] Transition from the 3D screen into the desktop
-- [ ] Skip-to-desktop button and a `#desktop` link
+- [x] Skip-to-desktop button and a `#desktop` link
 - [x] Desktop UI: menu bar, dock, Finder, project windows, resizing, full screen
 - [ ] More macOS polish and animations
-- [ ] Phone layout: home screen with app icons
+- [x] Phone layout: phone on the table, Android-style home screen, apps and recents
 - [ ] Reduced-motion version
 - [ ] Final project descriptions, screenshots and links (drafts are in place)
 - [ ] Backend: projects API, terminal, live metrics, guestbook, contact form

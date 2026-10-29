@@ -1,8 +1,8 @@
-import { useSyncExternalStore } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { toSvg } from 'html-to-image'
 import { screenRect } from './screen'
 
-// image of the desktop for the laptop screen in the cafe (scene/DesktopScreen.tsx).
+// snapshot of the desktop/phone UI for the screen in the cafe (DeviceScreens.tsx).
 // retaken in the background after changes so it's current by the time you scroll out
 
 let element: HTMLElement | null = null
@@ -74,6 +74,29 @@ async function rasterize(url: string, width: number, height: number) {
   canvas.height = Math.round(height * scale)
   canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
   return canvas
+}
+
+// snapshot on load, after changes while it's open, and once more on the way out.
+// resizes retake it even while hidden, otherwise the iOS toolbars hiding mid scroll stretch
+// the old one and the icons jump when the live UI shows
+export function useSnapshots(active: boolean, changes: unknown[], size: { width: number; height: number }) {
+  useEffect(() => scheduleSnapshot(1000), [])
+  useEffect(() => {
+    if (active) scheduleSnapshot()
+  }, [active, ...changes])
+  const firstSize = useRef(true)
+  useEffect(() => {
+    if (firstSize.current) {
+      firstSize.current = false
+      return
+    }
+    scheduleSnapshot(150)
+  }, [size.width, size.height])
+  const wasActive = useRef(active)
+  useEffect(() => {
+    if (wasActive.current && !active) takeSnapshot()
+    wasActive.current = active
+  }, [active])
 }
 
 export async function takeSnapshot() {

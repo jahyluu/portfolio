@@ -4,7 +4,7 @@ import { AppleIcon, DocumentIcon, FolderIcon } from './icons'
 import { useDesktopActive } from '../handoff'
 import { goToCafe } from '../scroll'
 import { useScreenRect } from './screen'
-import { registerDesktop, scheduleSnapshot, takeSnapshot } from './snapshot'
+import { registerDesktop, scheduleSnapshot, useSnapshots } from './snapshot'
 import { desktop, MENU_BAR_HEIGHT, useDesktop, type DesktopWindow } from './store'
 import './desktop.css'
 
@@ -21,17 +21,7 @@ export function Desktop() {
   const topWindow = visible.length ? visible.reduce((a, b) => (a.z > b.z ? a : b)) : null
   const fullScreen = !!topWindow?.maximized
 
-  // initial snapshot after load, then after every change
-  useEffect(() => scheduleSnapshot(1000), [])
-  useEffect(() => {
-    if (active) scheduleSnapshot()
-  }, [active, state, width, height])
-  // catch anything that changed right before leaving
-  const wasActive = useRef(active)
-  useEffect(() => {
-    if (wasActive.current && !active) takeSnapshot()
-    wasActive.current = active
-  }, [active])
+  useSnapshots(active, [state], { width, height })
 
   return (
     <div

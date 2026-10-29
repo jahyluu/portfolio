@@ -1,3 +1,4 @@
+import { TOUCH } from '../quality'
 import { goToDesktop } from '../scroll'
 
 // name/title over the opening shot, fades out on scroll (see global.css). the cue doubles as
@@ -10,7 +11,7 @@ export function HeroOverlay() {
         <p>Software Engineer</p>
       </header>
       <button className="scroll-cue" onClick={goToDesktop}>
-        Scroll or press 2
+        {TOUCH ? 'Swipe up or tap' : 'Scroll or press 2'}
       </button>
     </>
   )
