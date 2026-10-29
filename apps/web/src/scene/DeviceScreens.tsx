@@ -1,13 +1,14 @@
 import { useEffect, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { CanvasTexture, Euler, InstancedMesh, LessEqualDepth, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Quaternion, Scene, Sphere, SRGBColorSpace, TextureLoader, Vector3, type Texture } from 'three'
+import { CanvasTexture, Euler, InstancedMesh, LessEqualDepth, MathUtils, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Quaternion, Scene, Sphere, SRGBColorSpace, Vector3, type Texture } from 'three'
 import { DISPLAYS, screenRect, type Device } from '../desktop/screen'
 import { getSnapshot, useSnapshotVersion } from '../desktop/snapshot'
 import { smoothedScroll, useDesktopActive } from '../handoff'
 import { LAPTOP, MY_PHONE, MY_SCREEN, MY_TABLE, PHONE_SCREEN, SCREEN_SIZE, TABLE_HEIGHT } from './layout'
 
-// slightly dimmed from far away so it doesn't glow, full brightness on landing
-const BRIGHTNESS = { far: 0.82, fadeFrom: 0.6, fadeTo: 0.95 }
+// scroll progress where the snapshot fades in over the plain screen underneath (blue on the
+// laptop like everyone else's, black glass on the phone). the phone only comes into view late
+const FADE = { laptop: [0.4, 0.75], phone: [0.62, 0.85] } as const
 
 type ScreenProps = {
   device: Device
@@ -15,13 +16,11 @@ type ScreenProps = {
   quaternion: Quaternion
   width: number
   height: number
-  // shown when this isn't the device the camera ends on
-  idle?: () => Texture | null
 }
 
-// shows the latest snapshot. drawn in its own pass after post so tone mapping doesn't touch
-// the colors. depth comes from Occluders
-function DeviceScreen({ device, position, quaternion, width, height, idle }: ScreenProps) {
+// the latest snapshot, fading in over the screen in the cafe as you get close. drawn in its own
+// pass after post so tone mapping doesn't touch the colors. depth comes from Occluders
+function DeviceScreen({ device, position, quaternion, width, height }: ScreenProps) {
   const version = useSnapshotVersion()
   const anisotropy = useThree((state) => state.gl.capabilities.getMaxAnisotropy())
   const size = useThree((state) => state.size)
@@ -30,7 +29,14 @@ function DeviceScreen({ device, position, quaternion, width, height, idle }: Scr
 
   const { scene, material, mesh } = useMemo(() => {
     // sits right on the black glass, nudge it forward
-    const material = new MeshBasicMaterial({ color: '#000000', fog: false, depthFunc: LessEqualDepth, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8 })
+    const material = new MeshBasicMaterial({
+      fog: false,
+      transparent: true,
+      depthFunc: LessEqualDepth,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -8,
+    })
     const mesh = new Mesh(new PlaneGeometry(width, height), material)
     mesh.position.copy(position)
     mesh.quaternion.copy(quaternion)
@@ -44,29 +50,27 @@ function DeviceScreen({ device, position, quaternion, width, height, idle }: Scr
     mesh.scale.x = active ? rect.width / rect.height / DISPLAYS[device].aspect : 1
   }, [mesh, active, rect.width, rect.height, device])
 
+  // only the device the camera ends on shows the UI, the other one stays a plain screen
   useEffect(() => {
     let texture: Texture | null = null
-    if (active) {
-      const image = getSnapshot()
-      if (image) {
-        texture = new CanvasTexture(image)
-        texture.colorSpace = SRGBColorSpace
-        texture.anisotropy = Math.min(8, anisotropy)
-      }
-    } else {
-      texture = idle?.() ?? null
+    const image = active ? getSnapshot() : null
+    if (image) {
+      texture = new CanvasTexture(image)
+      texture.colorSpace = SRGBColorSpace
+      texture.anisotropy = Math.min(8, anisotropy)
     }
     const previous = material.map
     material.map = texture
     material.needsUpdate = true
-    if (previous && previous !== texture && previous.userData.disposable !== false) previous.dispose()
-  }, [version, active, material, anisotropy, idle])
+    previous?.dispose()
+  }, [version, active, material, anisotropy])
 
   // after the EffectComposer (priority 1) and Occluders (2)
   useFrame(({ gl, camera }) => {
     if (!material.map) return
-    const t = (smoothedScroll.progress - BRIGHTNESS.fadeFrom) / (BRIGHTNESS.fadeTo - BRIGHTNESS.fadeFrom)
-    material.color.setScalar(active ? BRIGHTNESS.far + (1 - BRIGHTNESS.far) * Math.min(Math.max(t, 0), 1) : BRIGHTNESS.far)
+    const [from, to] = FADE[device]
+    material.opacity = MathUtils.smoothstep(smoothedScroll.progress, from, to)
+    if (!material.opacity) return
     const autoClear = gl.autoClear
     gl.autoClear = false
     gl.setRenderTarget(null)
@@ -144,25 +148,10 @@ const PHONE_POSE = (() => {
   }
 })()
 
-// on phones the laptop just shows the wallpaper, cropped to 16:10 around Kindred
-// (same focus point as the desktop wallpaper css)
-let laptopWallpaper: Texture | null = null
-function wallpaperTexture() {
-  if (laptopWallpaper) return laptopWallpaper
-  laptopWallpaper = new TextureLoader().load('/wallpaper.webp')
-  laptopWallpaper.colorSpace = SRGBColorSpace
-  laptopWallpaper.userData.disposable = false
-  const imageAspect = 2
-  laptopWallpaper.repeat.set(DISPLAYS.laptop.aspect / imageAspect, 1)
-  laptopWallpaper.offset.set(Math.min(Math.max(0.44 - laptopWallpaper.repeat.x / 2, 0), 1 - laptopWallpaper.repeat.x), 0)
-  return laptopWallpaper
-}
-
 export function LaptopScreen() {
-  return <DeviceScreen device="laptop" {...LAPTOP_POSE} width={SCREEN_SIZE.width} height={SCREEN_SIZE.height} idle={wallpaperTexture} />
+  return <DeviceScreen device="laptop" {...LAPTOP_POSE} width={SCREEN_SIZE.width} height={SCREEN_SIZE.height} />
 }
 
-// off (black glass, see Phone.tsx) unless the camera ends on it
 export function PhoneScreen() {
   return <DeviceScreen device="phone" {...PHONE_POSE} width={PHONE_SCREEN.width} height={PHONE_SCREEN.height} />
 }

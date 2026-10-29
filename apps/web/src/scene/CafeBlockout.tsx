@@ -334,9 +334,9 @@ function Laptop({ position, rotationY = 0, sticker, mine = false }: LaptopProps)
         {/* kept under the bloom threshold so the full-screen shot stays sharp */}
         <mesh position={[0, LID.height / 2, -0.0045]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[SCREEN_SIZE.width, SCREEN_SIZE.height]} />
-          <meshBasicMaterial color={mine ? '#0b0a10' : COLOR.screen} />
+          <meshBasicMaterial color={COLOR.screen} />
         </mesh>
-        {/* draws itself over the black screen in its own pass */}
+        {/* my desktop fades in over the blue screen up close */}
         {mine && <LaptopScreen />}
         {sticker && <LaptopSticker kind={sticker} position={[0, LID.height / 2, -0.0055]} rotationY={Math.PI} onScreen />}
       </group>

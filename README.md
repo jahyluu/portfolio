@@ -33,6 +33,9 @@ button, and `/#desktop` opens straight onto the desktop.
   same on any monitor and the laptop's edges stay visible around it
 - In the cafe, the laptop screen shows a snapshot of the desktop as a texture in the 3D scene.
   It's retaken in the background a moment after anything changes, so it's always current
+- From far away my laptop has the same plain blue screen as everyone else's. The snapshot fades
+  in over it as the camera gets close and back out as you scroll away (on the phone it fades
+  from the black glass)
 - When the camera lands, the live HTML desktop fades in over the snapshot. Both are fitted to
   the same whole-pixel rect, so they line up exactly and the swap isn't visible
 - The screen is drawn after the glow and color grading so its colors match the live desktop,
