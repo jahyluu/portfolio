@@ -104,8 +104,8 @@ export function ContactTile({ size = 64 }: { size?: number }) {
   )
 }
 
-// menu bar mark: a little coffee cup
-export function CupMark() {
+// menu bar apple icon
+export function AppleIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 

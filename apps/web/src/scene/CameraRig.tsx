@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
 import { updateHandoff } from '../handoff'
 import { screenRect } from '../desktop/screen'
-import { scroll, scrollToProgress } from '../scroll'
+import { scroll, startOnDesktop } from '../scroll'
 import { CAMERA_PATH, MY_SCREEN, SCREEN_SIZE, type Vec3 } from './layout'
 
 // lower = floatier
@@ -11,15 +11,13 @@ const SMOOTHING = 5
 // minimum speed (progress/sec). damping alone never quite reaches the target, this makes
 // the camera actually land so the desktop lines up
 const MIN_SPEED = 0.03
-// dev: keys 1-5 jump to these
-const PREVIEW_STOPS = [0, 0.25, 0.5, 0.75, 1]
-
 // camera follows the spiral in layout.ts based on scroll
 export function CameraRig() {
   const camera = useThree((state) => state.camera) as PerspectiveCamera
   const width = useThree((state) => state.size.width)
   const height = useThree((state) => state.size.height)
-  const smoothed = useRef(scroll.progress)
+  // #desktop starts at the end instead of spiraling in from the cafe
+  const smoothed = useRef(startOnDesktop ? 1 : scroll.progress)
 
   const spiral = useMemo(
     () => makeSpiral(fullScreenPosition(camera.fov, width, height)),
@@ -36,16 +34,6 @@ export function CameraRig() {
     camera.lookAt(target)
     updateHandoff(smoothed.current)
   })
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return
-    const onKey = (event: KeyboardEvent) => {
-      const stop = PREVIEW_STOPS[Number(event.key) - 1]
-      if (stop !== undefined) scrollToProgress(stop)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
 
   return null
 }

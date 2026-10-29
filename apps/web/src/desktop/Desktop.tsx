@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { APPS, DOCK, type AppId } from './apps'
-import { PROFILE } from './content'
 import { AppleIcon, DocumentIcon, FolderIcon } from './icons'
 import { useDesktopActive } from '../handoff'
+import { goToCafe } from '../scroll'
 import { useScreenRect } from './screen'
 import { registerDesktop, scheduleSnapshot, takeSnapshot } from './snapshot'
 import { desktop, MENU_BAR_HEIGHT, useDesktop, type DesktopWindow } from './store'
@@ -72,7 +72,9 @@ function MenuBar({ title }: { title: string }) {
       <span className="menu-item">View</span>
       <span className="menu-item">Window</span>
       <span className="menu-spacer" />
-      <span className="menu-item">{PROFILE.name}</span>
+      <button className="menu-item menu-action" onClick={goToCafe}>
+        Back to café <kbd>1</kbd>
+      </button>
       <time className="menu-item" dateTime={now.toISOString()}>
         {now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
         {now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}

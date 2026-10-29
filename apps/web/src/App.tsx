@@ -1,11 +1,19 @@
 import { useEffect } from 'react'
 import { Experience } from './scene/Experience'
 import { HeroOverlay } from './overlay/HeroOverlay'
-import { trackScroll } from './scroll'
+import { scrollToProgress, startOnDesktop, trackScroll, trackShortcuts } from './scroll'
 import { Desktop } from './desktop/Desktop'
 
 export default function App() {
-  useEffect(() => trackScroll(), [])
+  useEffect(() => {
+    const stopScroll = trackScroll()
+    const stopShortcuts = trackShortcuts()
+    if (startOnDesktop) scrollToProgress(1, 'instant')
+    return () => {
+      stopScroll()
+      stopShortcuts()
+    }
+  }, [])
 
   return (
     <>
@@ -15,7 +23,6 @@ export default function App() {
       <Desktop />
       {/* spacer for scroll height */}
       <div className="scroll-track" aria-hidden="true" />
-      {import.meta.env.DEV && <p className="dev-hint">preview: press 1-5</p>}
     </>
   )
 }

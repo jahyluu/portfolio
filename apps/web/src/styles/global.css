@@ -56,15 +56,33 @@ body {
 
 .scroll-cue {
   position: fixed;
-  bottom: 40px;
+  bottom: 32px;
   left: 50%;
   margin: 0;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
   font-size: 12px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  pointer-events: none;
+  white-space: nowrap;
+  cursor: pointer;
   opacity: clamp(0, calc(1 - var(--scroll, 0) * 20), 0.7);
   animation: bob 2s ease-in-out infinite;
+  transition: background 0.2s;
+}
+
+.scroll-cue:hover,
+.scroll-cue:focus-visible {
+  background: rgb(0 0 0 / 0.35);
+}
+
+/* gone by then, so it shouldn't catch clicks */
+.scrolled .scroll-cue {
+  pointer-events: none;
 }
 
 @keyframes bob {
@@ -84,17 +102,3 @@ body {
   }
 }
 
-.desktop-active .dev-hint {
-  display: none;
-}
-
-.dev-hint {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  margin: 0;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgb(0 0 0 / 0.5);
-  font-size: 12px;
-}

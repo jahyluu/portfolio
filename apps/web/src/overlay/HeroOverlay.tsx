@@ -1,5 +1,7 @@
-// name/title over the opening shot, fades out on scroll (see global.css)
-// TODO: skip button once the desktop exists
+import { goToDesktop } from '../scroll'
+
+// name/title over the opening shot, fades out on scroll (see global.css). the cue doubles as
+// a skip button, mainly for phones where there's no 2 key
 export function HeroOverlay() {
   return (
     <>
@@ -7,9 +9,9 @@ export function HeroOverlay() {
         <h1>Jahy Luu</h1>
         <p>Software Engineer</p>
       </header>
-      <p className="scroll-cue" aria-hidden="true">
-        Scroll
-      </p>
+      <button className="scroll-cue" onClick={goToDesktop}>
+        Scroll or press 2
+      </button>
     </>
   )
 }
