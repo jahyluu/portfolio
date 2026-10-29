@@ -356,7 +356,8 @@ const HAIRLINE: Hairline = [
   [Math.PI, -0.88], // nape
 ]
 
-const HAIR = makeHairShell({
+// also used by Customer for anyone with my haircut
+export const HAIR = makeHairShell({
   skull: SKULL,
   hairline: HAIRLINE,
   // softer edge at the back so it doesn't stick out at the nape

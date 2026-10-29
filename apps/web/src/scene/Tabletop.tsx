@@ -32,7 +32,8 @@ export function Tabletops() {
 
       {/* window booth */}
       {WINDOW_TABLES.flatMap(({ z, bench, chair }) => [
-        bench && <CoffeeCup key={`b${z}`} position={[wx + 0.2, TABLE_HEIGHT, z + 0.2]} rotationY={Math.PI / 2} />,
+        // the solo laptop seat's handle points out toward the edge of the table
+        bench && <CoffeeCup key={`b${z}`} position={[wx + 0.2, TABLE_HEIGHT, z + 0.2]} rotationY={z === 0 ? -Math.PI / 2 : Math.PI / 2} />,
         chair && <CoffeeCup key={`c${z}`} position={[wx - 0.2, TABLE_HEIGHT, z - 0.2]} rotationY={-Math.PI / 2} />,
       ])}
       <PastryPlate position={[wx, TABLE_HEIGHT, WINDOW_TABLES[0].z]} rotationY={0.8} />

@@ -44,7 +44,7 @@ const STUDY: { look: Look; action: Action }[] = [
 ]
 // per window table, bench and chair (only used where someone's sitting)
 const BOOTH: { bench: { look: Look; action: Action }; chair: { look: Look; action: Action } }[] = [
-  { bench: { look: CAST.lena, action: 'laughing' }, chair: { look: CAST.sam, action: 'chatting' } },
+  { bench: { look: CAST.thu, action: 'laughing' }, chair: { look: CAST.bao, action: 'chatting' } },
   { bench: { look: CAST.june, action: 'typing' }, chair: { look: CAST.sam, action: 'chatting' } },
   { bench: { look: CAST.lena, action: 'chatting' }, chair: { look: CAST.sam, action: 'chatting' } },
   { bench: { look: CAST.bea, action: 'phone' }, chair: { look: CAST.ray, action: 'typing' } },
