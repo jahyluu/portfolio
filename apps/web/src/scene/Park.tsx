@@ -565,7 +565,7 @@ function Ducks() {
   })
 
   return (
-    <group>
+    <group userData={{ dynamic: true }}>
       {SWIMMERS.map(({ kind }, i) => (
         <group
           key={i}

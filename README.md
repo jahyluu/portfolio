@@ -104,8 +104,8 @@ way as the desktop: a snapshot on the phone screen in the cafe, the live UI once
   - Poker table: one player checking and pointing around the table, one holding pocket aces,
     and a nervous one who rubs his forehead, peeks at his cards and raises
   - Study table: someone playing League who loses a fight now and then, and someone taking notes
-  - Window booth: a couple chatting (she laughs every so often), someone on a laptop, someone
-    on their phone
+  - Window booth: a woman in a gray ao trang chatting with a doctor in his white coat and
+    stethoscope (she laughs every so often), someone on a laptop, someone on their phone
   - A reader on the west wall, and the sleeper with his head on his arms
 - Low-poly sneakers, loafers and sandals
 - Necks that bend with the head and rounded shoulders on everyone
@@ -131,6 +131,16 @@ way as the desktop: a snapshot on the phone screen in the cafe, the live UI once
 Everything is built from code (no imported models yet). Repeated objects like rain, rocks,
 gravel, petals and blossoms are instanced so the scene stays fast.
 
+**Performance**
+- Once the cafe loads, everything that never moves is merged into one mesh per material, and
+  each person's head and torso are merged within themselves. That cut the draw calls per frame
+  from about 2,650 to about 1,100
+- Objects outside every shadow-casting light's cone stop casting shadows (852 down to 245), and
+  the shadow maps redraw every other frame
+- Shaders are compiled up front, so nothing stutters the first time it comes into view
+- Asks the browser for the faster graphics card on laptops that have two
+- The 3D scene stops rendering while you're on the desktop or phone
+
 ## Project structure
 
 ```
@@ -145,6 +155,7 @@ portfolio/
 │           ├── scene/
 │           │   ├── layout.ts         # where everything sits, camera path
 │           │   ├── CameraRig.tsx     # scroll-driven camera
+│           │   ├── ScenePrep.tsx     # merges static meshes, trims shadows, compiles shaders
 │           │   ├── Lighting.tsx      # lights
 │           │   ├── StringLights.tsx  # string lights along the beams
 │           │   ├── PostEffects.tsx   # glow, color grading, vignette
@@ -180,6 +191,7 @@ portfolio/
 │           │   ├── store.ts          # open apps (in memory, resets on reload)
 │           │   └── phone.css
 │           ├── handoff.ts       # cafe -> desktop handoff
+│           ├── loading.ts       # tells the page when the cafe is ready to show
 │           ├── quality.ts       # lighter render on phones, WebGL check
 │           ├── scroll.ts        # scroll progress, 1/2 shortcuts
 │           ├── overlay/         # HTML on top of the scene (name, title)

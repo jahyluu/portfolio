@@ -12,6 +12,7 @@ import { Paintings } from './Paintings'
 import { COLOR } from './palette'
 import { PostEffects } from './PostEffects'
 import { Room } from './Room'
+import { ScenePrep } from './ScenePrep'
 import { Tabletops } from './Tabletop'
 import { LOW_POWER } from '../quality'
 
@@ -19,7 +20,7 @@ import { LOW_POWER } from '../quality'
 export function Experience() {
   return (
     <div className="scene">
-      <Canvas camera={{ fov: 45, near: 0.05, far: 60 }} dpr={LOW_POWER ? [1, 1.5] : [1, 2]} shadows flat>
+      <Canvas camera={{ fov: 45, near: 0.05, far: 60 }} dpr={LOW_POWER ? [1, 1.5] : [1, 2]} gl={{ powerPreference: 'high-performance' }} shadows flat>
         <color attach="background" args={[COLOR.night]} />
         {/* warm haze */}
         <fog attach="fog" args={[COLOR.haze, 9, 26]} />
@@ -35,6 +36,7 @@ export function Experience() {
         <Phone />
         <PhoneScreen />
         <Occluders />
+        <ScenePrep />
         <Paintings />
         <PostEffects />
         {/* fps counter, dev only */}

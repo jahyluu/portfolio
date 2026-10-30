@@ -359,7 +359,7 @@ export function Barista() {
   })
 
   return (
-    <group>
+    <group userData={{ dynamic: true }}>
       <group ref={root}>
         {/* legs */}
         {[0, 1].map((k) => (

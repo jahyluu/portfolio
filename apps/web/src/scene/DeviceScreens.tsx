@@ -87,25 +87,21 @@ const OCCLUDER_LAYER = 1
 const NEAR_TABLE = new Sphere(new Vector3(MY_TABLE.position[0], TABLE_HEIGHT, MY_TABLE.position[2]), 1.2)
 const depthOnly = new MeshBasicMaterial({ colorWrite: false })
 
+// called once by ScenePrep, before it merges anything
+export function tagOccluders(scene: Scene) {
+  const bounds = new Sphere()
+  scene.traverse((object) => {
+    if (!(object instanceof Mesh) || !object.visible) return
+    if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere()
+    bounds.copy(object.geometry.boundingSphere!).applyMatrix4(object.matrixWorld)
+    // skip big instanced sets (rain, gravel)
+    if (object instanceof InstancedMesh && bounds.radius > 1) return
+    if (bounds.center.distanceTo(NEAR_TABLE.center) < NEAR_TABLE.radius) object.layers.enable(OCCLUDER_LAYER)
+  })
+}
+
 export function Occluders() {
   const scene = useThree((state) => state.scene)
-
-  useEffect(() => {
-    const tag = () => {
-      const bounds = new Sphere()
-      scene.traverse((object) => {
-        if (!(object instanceof Mesh) || !object.visible) return
-        if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere()
-        bounds.copy(object.geometry.boundingSphere!).applyMatrix4(object.matrixWorld)
-        // skip big instanced sets (rain, gravel)
-        if (object instanceof InstancedMesh && bounds.radius > 1) return
-        if (bounds.center.distanceTo(NEAR_TABLE.center) < NEAR_TABLE.radius) object.layers.enable(OCCLUDER_LAYER)
-      })
-    }
-    // wait for everything to mount
-    const timer = setTimeout(tag, 500)
-    return () => clearTimeout(timer)
-  }, [scene])
 
   useFrame(({ gl, camera }) => {
     const { mask } = camera.layers

@@ -105,7 +105,7 @@ function Steam({ position }: { position: Vec3 }) {
   })
 
   return (
-    <group position={position}>
+    <group position={position} userData={{ dynamic: true }}>
       {Array.from({ length: PUFFS }, (_, i) => (
         <mesh
           key={i}
@@ -308,7 +308,7 @@ function Drips({ position }: { position: Vec3 }) {
   })
 
   return (
-    <group position={position}>
+    <group position={position} userData={{ dynamic: true }}>
       {Array.from({ length: DRIPS }, (_, i) => (
         <mesh
           key={i}

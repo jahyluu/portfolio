@@ -401,6 +401,11 @@ export function Customer({ look, action, position, rotationY = 0, reach: forward
   )
 }
 
+// moved every frame, ScenePrep leaves these alone (the legs, shoes and chair get merged)
+const MOVES = { dynamic: true }
+// moves as one piece, so ScenePrep can merge what's inside it
+const MOVES_RIGID = { dynamic: true, rigid: true }
+
 function SeatedBody({ look, action, forward, phase, drop, table }: { look: Look; action: Action; forward: number; phase: number; drop: number; table: number }) {
   const head = useRef<Group>(null!)
   const torso = useRef<Group>(null!)
@@ -638,7 +643,7 @@ function SeatedBody({ look, action, forward, phase, drop, table }: { look: Look;
   return (
     <group>
       <Legs look={look} />
-      <group ref={torso} position={[0, HIP_Y, 0]} rotation={[LEAN, 0, 0]}>
+      <group ref={torso} userData={MOVES_RIGID} position={[0, HIP_Y, 0]} rotation={[LEAN, 0, 0]}>
         <mesh geometry={TORSO} material={look.cami ? mat(look.skin) : look.coat ? smoothMat(look.top) : topMaterial(look, 'torso')} scale={[width, tall, TORSO_DEPTH * width * (look.large ? 1.1 : 1)]} castShadow receiveShadow />
         {look.cami && <Cami look={look} width={width} tall={tall} />}
         {look.necklace && <Necklace width={width} tall={tall} />}
@@ -669,50 +674,50 @@ function SeatedBody({ look, action, forward, phase, drop, table }: { look: Look;
         )}
       </group>
       {/* placed in useFrame */}
-      <mesh ref={neck} geometry={LIMB} material={mat(look.skin)} />
-      <group ref={head} position={onTorso(0, HEAD_UP * tall, 0.01).toArray()}>
+      <mesh ref={neck} userData={MOVES} geometry={LIMB} material={mat(look.skin)} />
+      <group ref={head} userData={MOVES_RIGID} position={onTorso(0, HEAD_UP * tall, 0.01).toArray()}>
         <group scale={look.large ? 1.08 : look.small ? 0.96 : 1}>
           <Head look={look} />
         </group>
       </group>
       {[0, 1].map((k) => (
         <group key={k}>
-          <mesh ref={set(`upper${k}`)} geometry={limb} material={sleeve} castShadow />
+          <mesh ref={set(`upper${k}`)} userData={MOVES} geometry={limb} material={sleeve} castShadow />
           {/* shoulder joint */}
           {look.coat ? (
-            <mesh ref={set(`shoulder${k}`)} geometry={JOINT_SMOOTH} material={sleeve} scale={0.052 * thick} />
+            <mesh ref={set(`shoulder${k}`)} userData={MOVES} geometry={JOINT_SMOOTH} material={sleeve} scale={0.052 * thick} />
           ) : (
-            <mesh ref={set(`shoulder${k}`)} material={sleeve} scale={thick}>
+            <mesh ref={set(`shoulder${k}`)} userData={MOVES} material={sleeve} scale={thick}>
               <icosahedronGeometry args={[0.052, 1]} />
             </mesh>
           )}
           {look.coat ? (
-            <mesh ref={set(`elbow${k}`)} geometry={JOINT_SMOOTH} material={sleeve} scale={0.046 * thick} />
+            <mesh ref={set(`elbow${k}`)} userData={MOVES} geometry={JOINT_SMOOTH} material={sleeve} scale={0.046 * thick} />
           ) : (
-            <mesh ref={set(`elbow${k}`)} material={look.sleeves === 'long' ? sleeve : mat(look.skin)} scale={thick}>
+            <mesh ref={set(`elbow${k}`)} userData={MOVES} material={look.sleeves === 'long' ? sleeve : mat(look.skin)} scale={thick}>
               <icosahedronGeometry args={[0.046, 1]} />
             </mesh>
           )}
-          <mesh ref={set(`fore${k}`)} geometry={limb} material={forearm} castShadow />
+          <mesh ref={set(`fore${k}`)} userData={MOVES} geometry={limb} material={forearm} castShadow />
           {look.robe && (
-            <mesh ref={set(`drape${k}`)} material={sleeve} castShadow>
+            <mesh ref={set(`drape${k}`)} userData={MOVES} material={sleeve} castShadow>
               <boxGeometry args={[0.014, 0.1, 1]} />
             </mesh>
           )}
-          <mesh ref={set(`hand${k}`)} material={mat(look.skin)} castShadow scale={thick}>
+          <mesh ref={set(`hand${k}`)} userData={MOVES} material={mat(look.skin)} castShadow scale={thick}>
             <boxGeometry args={[0.062, 0.025, 0.085]} />
           </mesh>
         </group>
       ))}
       {action === 'phone' && <Phone y={tableY + 0.16} />}
       {action === 'raise' && (
-        <group ref={chips}>
+        <group ref={chips} userData={MOVES}>
           <ChipStack position={[0, 0, 0]} count={RAISE_CHIPS} from={stackCount - RAISE_CHIPS} seed={RAISER * 10 + 1} />
         </group>
       )}
       {action === 'gaming' && <Mouse position={[-0.215, tableY, forward + 0.02]} />}
       {(action === 'cards' || action === 'checkPoint') && look.hand && (
-        <group ref={cards}>
+        <group ref={cards} userData={MOVES}>
           {/* faces toward her: the group's +z points back at her chest after the turn */}
           <group rotation={[0, Math.PI, 0]}>
             <HeldCards cards={look.hand} />
@@ -1335,7 +1340,7 @@ export function Sleeper({ look, position, rotationY = 0 }: { look: Look; positio
   const shoulderR = at(-0.165, 0.44)
   const armY = TABLE_HEIGHT + 0.045
   return (
-    <group position={position} rotation={[0, rotationY, 0]}>
+    <group position={position} rotation={[0, rotationY, 0]} userData={{ dynamic: true }}>
       <Chair />
       <Legs look={look} />
       <group position={[0, HIP_Y, 0]} rotation={[lean, 0, 0]}>

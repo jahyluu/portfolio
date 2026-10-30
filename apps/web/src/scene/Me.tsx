@@ -72,7 +72,7 @@ const RIM = new Vector3(0, 0.1, -0.042).applyAxisAngle(X_AXIS, CUP_TILT)
 
 export function Me() {
   return (
-    <group>
+    <group userData={{ dynamic: true }}>
       <group position={ME.position}>
         <Chair />
       </group>
