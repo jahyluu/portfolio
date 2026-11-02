@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { HeroOverlay } from './overlay/HeroOverlay'
 import { Intro } from './overlay/Intro'
 import { markSceneReady, useSceneReady } from './loading'
@@ -41,6 +42,7 @@ export default function App() {
       <>
         {ui}
         <Intro />
+        <Analytics />
       </>
     )
 
@@ -54,6 +56,8 @@ export default function App() {
       {/* spacer for scroll height */}
       <div className="scroll-track" aria-hidden="true" />
       <Intro />
+      {/* vercel web analytics, visitor counts in the dashboard */}
+      <Analytics />
     </>
   )
 }

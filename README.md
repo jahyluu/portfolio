@@ -147,6 +147,7 @@ way as the desktop: a snapshot on the phone screen in the cafe, the live UI once
   post-processing so the colors match the live desktop
 - **Loading intro:** a 2D canvas drawn in a web worker (OffscreenCanvas)
 - **Hosting:** Vercel, with the domain on Cloudflare. Every push to `main` deploys
+- **Analytics:** Vercel Web Analytics
 - **Backend (planned):** REST API with PostgreSQL
 
 Everything is built from code (no imported models yet). Repeated objects like rain, rocks,
@@ -172,6 +173,8 @@ portfolio/
 │       ├── public/
 │       │   ├── stickers/        # logo images for the laptop easter eggs
 │       │   ├── wallpaper.webp   # desktop wallpaper (+ a small copy that loads first)
+│       │   ├── icon.svg         # tab icon, my signature (+ png versions for older browsers)
+│       │   ├── og.jpg           # link preview image, the opening shot of the cafe
 │       │   └── resume.pdf
 │       └── src/
 │           ├── scene/
