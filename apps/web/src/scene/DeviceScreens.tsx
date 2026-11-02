@@ -6,8 +6,8 @@ import { getSnapshot, useSnapshotVersion } from '../desktop/snapshot'
 import { smoothedScroll, useDesktopActive } from '../handoff'
 import { LAPTOP, MY_PHONE, MY_SCREEN, MY_TABLE, PHONE_SCREEN, SCREEN_SIZE, TABLE_HEIGHT } from './layout'
 
-// scroll progress where the snapshot fades in over the plain screen underneath (blue on the
-// laptop like everyone else's, black glass on the phone). the phone only comes into view late
+// scroll progress where the snapshot fades in over the plain screen (blue on the laptop,
+// black on the phone). phone comes into view later
 const FADE = { laptop: [0.4, 0.75], phone: [0.62, 0.85] } as const
 
 type ScreenProps = {
@@ -18,8 +18,8 @@ type ScreenProps = {
   height: number
 }
 
-// the latest snapshot, fading in over the screen in the cafe as you get close. drawn in its own
-// pass after post so tone mapping doesn't touch the colors. depth comes from Occluders
+// latest snapshot, fades in as you get close. own pass after post so tone mapping doesn't
+// touch the colors, depth from Occluders
 function DeviceScreen({ device, position, quaternion, width, height }: ScreenProps) {
   const version = useSnapshotVersion()
   const anisotropy = useThree((state) => state.gl.capabilities.getMaxAnisotropy())
@@ -50,7 +50,7 @@ function DeviceScreen({ device, position, quaternion, width, height }: ScreenPro
     mesh.scale.x = active ? rect.width / rect.height / DISPLAYS[device].aspect : 1
   }, [mesh, active, rect.width, rect.height, device])
 
-  // only the device the camera ends on shows the UI, the other one stays a plain screen
+  // only the device the camera ends on gets the UI
   useEffect(() => {
     let texture: Texture | null = null
     const image = active ? getSnapshot() : null
@@ -87,7 +87,7 @@ const OCCLUDER_LAYER = 1
 const NEAR_TABLE = new Sphere(new Vector3(MY_TABLE.position[0], TABLE_HEIGHT, MY_TABLE.position[2]), 1.2)
 const depthOnly = new MeshBasicMaterial({ colorWrite: false })
 
-// called once by ScenePrep, before it merges anything
+// ScenePrep calls this once before merging
 export function tagOccluders(scene: Scene) {
   const bounds = new Sphere()
   scene.traverse((object) => {

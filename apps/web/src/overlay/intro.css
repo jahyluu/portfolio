@@ -1,0 +1,22 @@
+/* on top of everything */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.intro canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* let clicks through once it starts opening */
+.intro.opening {
+  pointer-events: none;
+}
+
+/* no scrolling behind it */
+html.intro-active {
+  overflow: hidden;
+}

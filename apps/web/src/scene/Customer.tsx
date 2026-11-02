@@ -13,7 +13,7 @@ import { CHIP_STACKS, ChipStack, HeldCards, RAISE_CHIPS, RAISER, type Suit } fro
 // loop each. built facing +z (+x is their left), sitting on a chair at the origin
 
 export type Action = 'typing' | 'gaming' | 'cards' | 'checkPoint' | 'raise' | 'reading' | 'chatting' | 'laughing' | 'phone' | 'notes'
-// mine = same haircut as me (Me.tsx)
+// mine = my haircut (Me.tsx)
 type HairStyle = 'short' | 'swept' | 'buzz' | 'bob' | 'long' | 'longStraight' | 'longBangs' | 'bun' | 'curlyTop' | 'mine'
 
 export type Look = {
@@ -27,7 +27,7 @@ export type Look = {
   cargo?: boolean // side pockets on the thighs
   graphic?: boolean // print on the front of the top
   maple?: boolean // a red maple leaf on the chest
-  logo?: string // image in public/ printed on the chest (transparent png)
+  logo?: string // chest print, image in public/ (transparent png)
   large?: boolean // big and tall: about 6' and 250 lbs
   small?: boolean // petite: about 5'3" and 110 lbs
   cami?: boolean // top is a camisole: bare shoulders, thin straps, lace trim
@@ -38,8 +38,8 @@ export type Look = {
   beard?: boolean
   stubble?: boolean
   polo?: boolean // collar + short button placket
-  robe?: boolean // ao trang: ankle length, crossed collar, wide hanging sleeves (top = robe color)
-  coat?: boolean // doctor's white coat (top) open over a collared shirt (inner)
+  robe?: boolean // ao trang, long with wide sleeves (top = robe color)
+  coat?: boolean // white coat (top) over a collared shirt (inner)
   stethoscope?: boolean
   size?: { width: number; thick: number; tall: number } // overrides large/small
   shoe?: 'sneaker' | 'loafer' | 'sandal'
@@ -60,7 +60,7 @@ export const CAST: Record<string, Look> = {
   dev: { skin: '#9a6a4a', hair: '#141110', style: 'buzz', top: '#3d5a4a', sleeves: 'short', pants: '#4a4a52', shoes: '#1d1d20', shoe: 'sandal' },
   sam: { skin: '#f0d0b4', hair: '#6b4a2e', style: 'swept', top: '#5a6b85', sleeves: 'long', inner: '#d9d4c7', pants: '#3a3f4a', shoes: '#3a2a1e', shoe: 'loafer' },
   lena: { skin: '#f3d6be', hair: '#b88a52', style: 'long', top: '#efe5d0', maple: true, sleeves: 'long', pants: '#2c2e33', shoes: '#1d1d20' },
-  // window booth couple. she's in a gray ao trang, he's a doctor on a break
+  // window booth couple, ao trang + doctor on break
   thu: { skin: '#f6dfcd', hair: '#0b0909', style: 'longStraight', top: '#a3abc2', robe: true, sleeves: 'long', pants: '#a3abc2', shoes: '#4a3a2c', shoe: 'sandal' },
   bao: { skin: '#e6c09e', hair: '#0d0b0a', style: 'short', top: '#f1f1ec', coat: true, stethoscope: true, inner: '#bfd4ea', sleeves: 'long', pants: '#2b2e36', shoes: '#2a211b', shoe: 'loafer' },
   kai: { skin: '#d8ab86', hair: '#16120f', style: 'short', top: '#2f3542', sleeves: 'long', pants: '#55595f', shoes: '#e6e1d8' },
@@ -105,7 +105,7 @@ function mat(color: string) {
   }
   return m
 }
-// smooth shaded, for clothes that should drape instead of looking faceted (the lab coat)
+// smooth shading for clothes that should drape (the lab coat)
 const SMOOTH = new Map<string, MeshStandardMaterial>()
 function smoothMat(color: string) {
   let m = SMOOTH.get(color)
@@ -401,9 +401,9 @@ export function Customer({ look, action, position, rotationY = 0, reach: forward
   )
 }
 
-// moved every frame, ScenePrep leaves these alone (the legs, shoes and chair get merged)
+// animated every frame, ScenePrep skips these (legs, shoes and chair still get merged)
 const MOVES = { dynamic: true }
-// moves as one piece, so ScenePrep can merge what's inside it
+// moves as one piece, ScenePrep can merge what's inside
 const MOVES_RIGID = { dynamic: true, rigid: true }
 
 function SeatedBody({ look, action, forward, phase, drop, table }: { look: Look; action: Action; forward: number; phase: number; drop: number; table: number }) {
@@ -610,7 +610,7 @@ function SeatedBody({ look, action, forward, phase, drop, table }: { look: Look;
       // elbows out and back, so they don't dip under the table when the hands are close in
       const pole = (side < 0 ? rightPole : leftPole) ?? new Vector3(side * 0.75, -0.45, -0.6)
       reach(shoulder, wrist, pole, elbow, ARM.upper * tall, ARM.fore * tall)
-      // the robe's sleeves are loose, the forearm one widens toward the cuff
+      // looser sleeves for the robe
       placeLimb(p[`upper${k}`], shoulder, elbow, (look.robe ? 0.058 : 0.05) * thick)
       placeLimb(p[`fore${k}`], elbow, wrist, (look.robe ? 0.06 : 0.042) * thick)
       if (p[`drape${k}`]) hangSleeve(p[`drape${k}`], elbow, wrist)
@@ -794,7 +794,7 @@ function Legs({ look }: { look: Look }) {
       })}
       <Blob position={[0, HIP_Y + 0.03, 0.01]} radii={look.large ? [0.22, 0.08, 0.14] : [0.145, 0.06, 0.095]} color={look.pants} />
       {look.robe && (
-        // the robe over her lap, then falling from the knees to just above the ankles
+        // over the lap, then down from the knees to the ankles
         <group>
           <mesh position={[0, HIP_Y + 0.07, 0.22]} rotation={[-0.06, 0, 0]} material={mat(look.top)} castShadow receiveShadow>
             <boxGeometry args={[0.3, 0.03, 0.44]} />
@@ -855,7 +855,7 @@ function Head({ look }: { look: Look }) {
       )}
       {look.style === 'bun' && <Blob position={[0, 0.2, -0.1]} radii={[0.05, 0.045, 0.045]} color={look.hair} />}
       {look.style === 'long' && <Blob position={[0, 0.02, -0.075]} radii={[0.1, 0.14, 0.045]} rotation={[0.15, 0, 0]} color={look.hair} />}
-      {/* straight down her back, past the shoulder blades */}
+      {/* down past her shoulder blades */}
       {look.style === 'longStraight' && <Blob position={[0, -0.07, -0.08]} radii={[0.1, 0.23, 0.04]} rotation={[0.18, 0, 0]} color={look.hair} />}
       {look.style === 'longBangs' && (
         // down the back past the shoulders, and a strand falling in front of each shoulder
@@ -870,11 +870,10 @@ function Head({ look }: { look: Look }) {
   )
 }
 
-// how wide chest logos are, in meters. the height follows the image so it never stretches
+// chest logo width in meters, height comes from the image
 const CHEST_LOGO_WIDTH = 0.15
 
-// a printed logo on the chest. hidden until the image loads, so a missing file just means
-// a plain shirt
+// logo printed on the chest. nothing until it loads, a missing file = plain shirt
 function ChestLogo({ src, position }: { src: string; position: Vec3 }) {
   const [texture, setTexture] = useState<Texture | null>(null)
   useEffect(() => {
@@ -897,7 +896,7 @@ function ChestLogo({ src, position }: { src: string; position: Vec3 }) {
   )
 }
 
-// wide sleeve hanging under the forearm, flat side facing out
+// the robe's wide sleeve hanging under the forearm
 const DOWN = new Vector3(0, -1, 0)
 const basis = new Matrix4()
 function hangSleeve(mesh: Mesh, elbow: Vector3, wrist: Vector3) {
@@ -910,20 +909,20 @@ function hangSleeve(mesh: Mesh, elbow: Vector3, wrist: Vector3) {
   const hang = new Vector3().crossVectors(along, side)
   basis.makeBasis(side, hang, along)
   mesh.quaternion.setFromRotationMatrix(basis)
-  // fuller near the cuff, hanging below the arm
+  // toward the cuff, below the arm
   mesh.position.copy(elbow).addScaledVector(along, length * 0.6).addScaledVector(hang, 0.06)
   mesh.scale.set(1, 1, length * 0.75)
 }
 
-// a strip lying on the chest along a path of [x, up] points (torso space), `width` wide off
-// to one side of the path (side: which way in x the strip extends). for collars and lapels
+// flat strip on the chest along [x, up] points (torso space), sticking out toward `side`.
+// collars and lapels
 function chestStrip(path: [number, number][], widths: number[], side: number, bodyWidth: number, out: number) {
   const positions: number[] = []
   const index: number[] = []
   path.forEach(([x, up], i) => {
     const [px, pu] = path[Math.max(i - 1, 0)]
     const [nx, nu] = path[Math.min(i + 1, path.length - 1)]
-    // perpendicular to the path in the (x, up) plane, pointing toward `side`
+    // sideways off the path, toward `side`
     let ox = -(nu - pu)
     let ou = nx - px
     const length = Math.hypot(ox, ou) || 1
@@ -944,15 +943,14 @@ function chestStrip(path: [number, number][], widths: number[], side: number, bo
   return geometry
 }
 
-// ao trang: wrap front. her left panel folds over the right one, so there's a v at the
-// neck and the top panel's edge keeps going down across to her right side. the collar band
-// runs along both edges and around the back of the neck
+// ao trang front: left panel wraps over the right, v at the neck, edge runs down across to
+// her right side. collar band along both edges and around the back
 function RobeCollar({ look, width, tall }: { look: Look; width: number; tall: number }) {
   const band = smoothMat(shade(look.top, 1.08))
   const fold = smoothMat(shade(look.top, 0.5))
   const { under, over, inside } = useMemo(() => {
     const up = (v: number) => v * tall
-    // her right panel (-x), from the neck down into the v
+    // right panel (-x), neck down into the v
     const under = chestStrip(
       [[-0.065, up(0.525)], [-0.045, up(0.46)], [-0.022, up(0.39)], [-0.004, up(0.335)]],
       [0.036, 0.036, 0.034, 0.028],
@@ -960,7 +958,7 @@ function RobeCollar({ look, width, tall }: { look: Look; width: number; tall: nu
       width,
       0.004,
     )
-    // her left panel on top, from the neck across to under her right arm
+    // left panel on top, neck across to under her right arm
     const over = chestStrip(
       [[0.065, up(0.525)], [0.045, up(0.46)], [0.016, up(0.39)], [-0.03, up(0.32)], [-0.085, up(0.27)], [-0.14, up(0.22)]],
       [0.038, 0.038, 0.038, 0.036, 0.034, 0.03],
@@ -968,7 +966,7 @@ function RobeCollar({ look, width, tall }: { look: Look; width: number; tall: nu
       width,
       0.007,
     )
-    // shadow inside the v where the panels fold under
+    // shadow in the v
     const inside = new BufferGeometry()
     inside.setAttribute('position', new Float32BufferAttribute([...onChest(-0.065 * width, up(0.525), width, 0.002), ...onChest(0.065 * width, up(0.525), width, 0.002), ...onChest(-0.004 * width, up(0.335), width, 0.002)], 3))
     inside.computeVertexNormals()
@@ -979,7 +977,7 @@ function RobeCollar({ look, width, tall }: { look: Look; width: number; tall: nu
       <mesh geometry={inside} material={fold} />
       <mesh geometry={under} material={band} />
       <mesh geometry={over} material={band} castShadow />
-      {/* band around the back of the neck */}
+      {/* back of the neck */}
       <mesh position={[0, 0.525 * tall, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[width, 1, 1]} material={band}>
         <torusGeometry args={[0.068, 0.014, 6, 16, Math.PI]} />
       </mesh>
@@ -987,7 +985,7 @@ function RobeCollar({ look, width, tall }: { look: Look; width: number; tall: nu
   )
 }
 
-// shirt collar points, flat on the chest inside the lapels
+// shirt collar points inside the lapels
 const shirtPointCache = new Map<string, BufferGeometry>()
 const SHIRT_POINTS = [-1, 1].map((side) => (width: number, tall: number) => {
   const key = `${side},${width},${tall}`
@@ -1001,8 +999,7 @@ const SHIRT_POINTS = [-1, 1].map((side) => (width: number, tall: number) => {
   return geometry
 })
 
-// lab coat collar: stands up at the back of the neck and folds down over itself, open at the
-// front where it turns into the lapels. lathe from the inner edge up and back down the outside
+// lab coat collar, stands up at the back and folds over, open at the front into the lapels
 const COAT_COLLAR = new LatheGeometry(
   [
     [0.096, 0.49],
@@ -1017,8 +1014,7 @@ const COAT_COLLAR = new LatheGeometry(
   Math.PI * 2 - 1.1,
 )
 
-// open white coat: collar and lapels, a breast pocket with a pen, shirt collar underneath
-// (the shirt strip down the front is JACKET_GAP)
+// open white coat with lapels and a pen in the pocket. shirt down the front is JACKET_GAP
 function LabCoat({ look, width, tall }: { look: Look; width: number; tall: number }) {
   const coat = smoothMat(look.top)
   const shirt = smoothMat(look.inner ?? '#ffffff')
@@ -1045,7 +1041,7 @@ function LabCoat({ look, width, tall }: { look: Look; width: number; tall: numbe
       {[-1, 1].map((side) => (
         <mesh key={side} geometry={SHIRT_POINTS[side > 0 ? 1 : 0](width, tall)} material={shirt} />
       ))}
-      {/* breast pocket on his left, with a pen clipped in */}
+      {/* pocket + pen, his left */}
       <mesh position={onChest(0.1 * width, 0.33 * tall, width, 0.005)} material={smoothMat(shade(look.top, 0.92))}>
         <planeGeometry args={[0.06, 0.06]} />
       </mesh>
@@ -1056,8 +1052,7 @@ function LabCoat({ look, width, tall }: { look: Look; width: number; tall: numbe
   )
 }
 
-// coat front lying over one thigh and wrapping down its outside, a curved sheet following
-// the thigh from the hip to just short of the knee
+// coat tail over one thigh, hip to almost the knee, wrapping down the outside
 function CoatTail({ look, side }: { look: Look; side: number }) {
   const geometry = useMemo(() => {
     const { thick, tall } = build(look)
@@ -1069,7 +1064,7 @@ function CoatTail({ look, side }: { look: Look; side: number }) {
     const out = new Vector3(side, 0, 0)
     const rings = 10
     const arc = 14
-    // from a little past the top toward the middle, over the top, down the outside
+    // angle range: a bit past the top, over, and down the outside
     const from = -0.35
     const to = 2.1
     const positions: number[] = []
@@ -1077,12 +1072,12 @@ function CoatTail({ look, side }: { look: Look; side: number }) {
     for (let i = 0; i <= rings; i++) {
       const u = i / rings
       const center = hip.clone().addScaledVector(along, u * 0.85)
-      // a bit looser at the hip, the coat hangs over the seat there
+      // looser at the hip
       const radius = thick * MathUtils.lerp(0.092, 0.07, u)
       for (let j = 0; j <= arc; j++) {
         const a = from + ((to - from) * j) / arc
         const p = center.clone().addScaledVector(up, Math.cos(a) * radius).addScaledVector(out, Math.sin(a) * radius)
-        // the outside edge hangs a little lower
+        // outside edge hangs lower
         if (a > Math.PI / 2) p.y -= (a - Math.PI / 2) * 0.03
         positions.push(p.x, p.y, p.z)
         if (i && j) {
@@ -1100,9 +1095,8 @@ function CoatTail({ look, side }: { look: Look; side: number }) {
   return <mesh geometry={geometry} material={smoothMat(look.top)} castShadow receiveShadow />
 }
 
-// worn around the coat collar: one tube from the chest piece on his left, around the back of
-// the neck, down his right side to the y. from there two short rubber tubes, then the metal
-// ear tubes curving out and back in like a heart, black tips at the bottom
+// stethoscope around the collar. chest piece on his left, tube around the back of the neck and
+// down his right side, then it splits into the heart shaped ear tubes
 function Stethoscope({ width, tall }: { width: number; tall: number }) {
   const tubing = smoothMat('#1d1f22')
   const metal = smoothMat('#a7adb4')
@@ -1144,7 +1138,7 @@ function Stethoscope({ width, tall }: { width: number; tall: number }) {
           <mesh position={tip} geometry={JOINT_SMOOTH} material={tubing} scale={0.008} />
         </group>
       ))}
-      {/* chest piece, just a round silver head */}
+      {/* chest piece */}
       <mesh position={[parts.chest.x, parts.chest.y - 0.018, parts.chest.z + 0.004]} rotation={[Math.PI / 2 - 0.12, 0, 0]} material={metal}>
         <cylinderGeometry args={[0.022, 0.022, 0.012, 20]} />
       </mesh>

@@ -5,19 +5,18 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { markSceneReady } from '../loading'
 import { tagOccluders } from './DeviceScreens'
 
-// one pass over the cafe after it loads, to cut how much each frame has to do:
-// - anything that never moves gets merged into one mesh per material (per area of the room),
-//   so a few hundred draw calls instead of thousands
-// - things no shadow-casting light can reach stop casting shadows
-// - shaders get compiled up front instead of stuttering the first time something shows up
-// people, steam, drips and ducks are tagged userData.dynamic and left alone. so is anything
-// clickable, see-through, or that moved while we watched
+// runs once after the cafe loads:
+// - merges everything that doesn't move, one mesh per material per area
+// - turns off shadows for stuff no shadow light can reach
+// - compiles shaders up front
+// skips anything tagged userData.dynamic (people, steam, drips, ducks), clickable stuff,
+// transparent stuff and anything that moved while watching
 
-// how long to watch for movement before deciding what's static
+// how long to watch for movement
 const WATCH_MS = 1000
-// merged meshes are split into squares this big so the parts behind the camera still get culled
+// merge areas are this big (m) so stuff behind the camera still gets culled
 const CELL = 10
-// shadow maps redraw every this many frames. people move slowly, nobody can tell
+// shadow maps update every N frames, people barely move
 const SHADOW_EVERY = 2
 
 const frame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -39,11 +38,11 @@ export function ScenePrep() {
       trimShadowCasters(scene)
       mergeStatic(scene, moving)
       mergeRigid(scene)
-      // compile into an offscreen target like the EffectComposer does, otherwise these are
-      // the to-screen versions of the shaders and the real ones still compile on first use
+      // compile against a render target like the EffectComposer uses, or you get the
+      // to-screen variants and the real ones still compile on first use
       const target = gl.getRenderTarget()
       gl.setRenderTarget(offscreen)
-      // the programs get created right away, the await is just for the gpu to finish
+      // programs get made here, the await is the gpu catching up
       const compiled = gl.compileAsync(scene, camera)
       gl.setRenderTarget(target)
       await compiled
@@ -55,7 +54,7 @@ export function ScenePrep() {
     }
   }, [gl, scene, camera])
 
-  // redraw shadows every few frames instead of every frame
+  // shadows every few frames
   useEffect(() => {
     gl.shadowMap.autoUpdate = false
     gl.shadowMap.needsUpdate = true
@@ -65,14 +64,14 @@ export function ScenePrep() {
   }, [gl])
   const frames = useRef(0)
   useFrame(() => {
-    // before the EffectComposer (priority 1) renders
+    // runs before the EffectComposer (priority 1)
     if (++frames.current % SHADOW_EVERY === 0) gl.shadowMap.needsUpdate = true
   })
 
   return null
 }
 
-// editing anything in scene/ during dev would leave the old merged copy behind, so reload
+// dev: editing scene/ would leave the old merged copy around, just reload
 if (import.meta.hot) {
   import.meta.hot.on('vite:beforeUpdate', (payload: { updates: { path: string }[] }) => {
     if (payload.updates.some((update) => update.path.includes('/scene/'))) location.reload()
@@ -82,7 +81,7 @@ if (import.meta.hot) {
 function isDynamic(object: Object3D) {
   for (let o: Object3D | null = object; o; o = o.parent) {
     if (o.userData.dynamic) return true
-    // clickable (r3f event handlers on it or a parent)
+    // has r3f event handlers (itself or a parent)
     if ((o as Object3D & { __r3f?: { eventCount?: number } }).__r3f?.eventCount) return true
   }
   return false
@@ -109,8 +108,7 @@ async function watchForMovement(scene: Scene, cancelled: () => boolean) {
   return moving
 }
 
-// groups tagged userData.rigid (a person's head, their torso) move as one piece, so what's
-// inside them can be merged in the group's own space and still move with it
+// userData.rigid groups (heads, torsos) move as one piece, merge inside them in their own space
 function mergeRigid(scene: Scene) {
   const rigid: Object3D[] = []
   scene.traverse((o) => {
@@ -123,7 +121,7 @@ function mergeRigid(scene: Scene) {
     group.traverse((o) => {
       const mesh = o as Mesh
       if (!mesh.isMesh || o === group || !mergeable(mesh)) return
-      // only things fixed to this group, not ones with their own animation inside it
+      // skip anything animated inside the group
       for (let p: Object3D | null = mesh; p && p !== group; p = p.parent) if (p.userData.dynamic || !p.visible) return
       const attributes = attributesFor(mesh)
       if (!attributes) return
@@ -143,8 +141,7 @@ function mergeRigid(scene: Scene) {
   })
 }
 
-// a shadow only shows up if the object is inside a shadow-casting light's cone. everything
-// else drawing into the shadow maps is wasted work
+// only things inside a shadow light's cone can show a shadow, turn it off for the rest
 function trimShadowCasters(scene: Scene) {
   const lights: { position: Vector3; direction: Vector3; angle: number; distance: number }[] = []
   scene.traverse((o) => {
@@ -161,7 +158,7 @@ function trimShadowCasters(scene: Scene) {
     if (!mesh.isMesh || !mesh.castShadow) return
     if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere()
     bounds.copy(mesh.geometry.boundingSphere!).applyMatrix4(mesh.matrixWorld)
-    // people shift around a bit, give them room
+    // people move a bit, extra margin
     const radius = bounds.radius + (isDynamic(mesh) ? 0.4 : 0.05)
     const lit = lights.some(({ position, direction, angle, distance }) => {
       toward.copy(bounds.center).sub(position)
@@ -177,7 +174,7 @@ function trimShadowCasters(scene: Scene) {
 
 const TEXTURE_SLOTS = ['map', 'matcap', 'emissiveMap', 'normalMap', 'roughnessMap', 'metalnessMap', 'alphaMap', 'aoMap', 'lightMap', 'bumpMap', 'envMap'] as const
 
-// materials that would draw the same get the same key
+// same key = draws the same
 function materialKey(material: Material) {
   const m = material as Material & Record<string, unknown>
   const color = (name: string) => (m[name] as { getHexString?: () => string } | undefined)?.getHexString?.() ?? ''
@@ -241,11 +238,11 @@ function mergeable(mesh: Mesh) {
   if ((mesh as Mesh & { isInstancedMesh?: boolean }).isInstancedMesh || (mesh as Mesh & { isSkinnedMesh?: boolean }).isSkinnedMesh) return false
   if (Array.isArray(mesh.material) || Object.keys(mesh.geometry.morphAttributes).length) return false
   const material = mesh.material as Material
-  // see-through things need sorting per object, custom shaders animate
+  // transparent stuff needs per-object sorting, custom shaders animate
   return !material.transparent && ['MeshStandardMaterial', 'MeshBasicMaterial', 'MeshLambertMaterial', 'MeshPhongMaterial', 'MeshMatcapMaterial'].includes(material.type)
 }
 
-// the attributes the material actually reads, or null if the geometry's missing one
+// attributes the material needs, null if the geometry is missing one
 function attributesFor(mesh: Mesh) {
   const material = mesh.material as Material & { vertexColors?: boolean }
   const attributes = ['position', 'normal']
@@ -254,8 +251,7 @@ function attributesFor(mesh: Mesh) {
   return attributes.every((name) => mesh.geometry.attributes[name]) ? attributes : null
 }
 
-// one mesh from many, each placed by `place`. the originals stay mounted for React, just
-// not drawn
+// merges meshes into one (positioned by `place`). originals stay mounted for React, just hidden
 function combine(meshes: Mesh[], material: Material, attributes: string[], place: (mesh: Mesh) => Matrix4) {
   const parts = meshes.map((mesh) => bake(mesh, attributes, place(mesh)))
   const geometry = mergeGeometries(parts, false)
@@ -272,7 +268,7 @@ function combine(meshes: Mesh[], material: Material, attributes: string[], place
   return merged
 }
 
-// a copy of the mesh's geometry, transformed, indexed, with just the attributes we need
+// transformed, indexed copy of the geometry with only the needed attributes
 function bake(mesh: Mesh, attributes: string[], matrix: Matrix4) {
   const source = mesh.geometry
   const geometry = new BufferGeometry()
@@ -288,7 +284,7 @@ function bake(mesh: Mesh, attributes: string[], matrix: Matrix4) {
   const index: number[] = []
   if (source.index) for (let i = 0; i < source.index.count; i++) index.push(source.index.getX(i))
   else for (let i = 0; i < count; i++) index.push(i)
-  // mirrored transforms flip the winding, flip it back so the right side faces out
+  // mirrored transforms flip the winding, flip it back
   if (matrix.determinant() < 0) {
     for (let i = 0; i < index.length; i += 3) [index[i + 1], index[i + 2]] = [index[i + 2], index[i + 1]]
   }

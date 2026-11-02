@@ -1,5 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { toSvg } from 'html-to-image'
+import { useIntroDone } from '../loading'
 import { screenRect } from './screen'
 
 // snapshot of the desktop/phone UI for the screen in the cafe (DeviceScreens.tsx).
@@ -80,7 +81,11 @@ async function rasterize(url: string, width: number, height: number) {
 // resizes retake it even while hidden, otherwise the iOS toolbars hiding mid scroll stretch
 // the old one and the icons jump when the live UI shows
 export function useSnapshots(active: boolean, changes: unknown[], size: { width: number; height: number }) {
-  useEffect(() => scheduleSnapshot(1000), [])
+  // first one waits for the intro to finish, it's a heavy one
+  const introDone = useIntroDone()
+  useEffect(() => {
+    if (introDone) scheduleSnapshot(0)
+  }, [introDone])
   useEffect(() => {
     if (active) scheduleSnapshot()
   }, [active, ...changes])

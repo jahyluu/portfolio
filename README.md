@@ -7,6 +7,25 @@ desktop with folders for my projects, about, tech stack, resume and contact info
 the camera ends on the phone lying next to my coffee instead, and it opens into an Android-style
 home screen.
 
+Live at [jahyluu.dev](https://jahyluu.dev).
+
+## Loading
+
+The page opens on white, and my signature gets written on it in one stroke, a big connected JL
+ending on the hook that curls back on the right. If the cafe is still loading, the ink pulses
+gently while it waits. Once it's ready, the signature itself turns into a window onto the cafe
+and widens outward until the page is gone.
+
+- The signature is traced from a scan as one continuous path
+- It's drawn on a canvas in a web worker, so the cafe loads at the same time without making the
+  pen stutter. Browsers that can't do that draw it on the main thread instead
+- The cafe's code is a separate chunk, so the intro shows up right away instead of waiting on
+  three.js
+- It only opens once the scene is merged and its shaders are compiled, so the cafe is smooth from
+  the first frame. The desktop is mounted when the cafe is ready, and its first snapshot waits
+  until the reveal is over
+- With reduced motion on, the signature shows up already written and fades out
+
 ## The scroll
 
 The camera follows one continuous spiral driven by scroll position, so the motion is smooth in
@@ -126,6 +145,8 @@ way as the desktop: a snapshot on the phone screen in the cafe, the live UI once
 - **Rain on the glass:** a custom GLSL shader
 - **Desktop snapshot:** html-to-image, drawn onto the laptop screen in a separate pass after
   post-processing so the colors match the live desktop
+- **Loading intro:** a 2D canvas drawn in a web worker (OffscreenCanvas)
+- **Hosting:** Vercel, with the domain on Cloudflare. Every push to `main` deploys
 - **Backend (planned):** REST API with PostgreSQL
 
 Everything is built from code (no imported models yet). Repeated objects like rain, rocks,
@@ -137,7 +158,8 @@ gravel, petals and blossoms are instanced so the scene stays fast.
   from about 2,650 to about 1,100
 - Objects outside every shadow-casting light's cone stop casting shadows (852 down to 245), and
   the shadow maps redraw every other frame
-- Shaders are compiled up front, so nothing stutters the first time it comes into view
+- Shaders are compiled up front, behind the intro, so nothing stutters the first time it comes
+  into view
 - Asks the browser for the faster graphics card on laptops that have two
 - The 3D scene stops rendering while you're on the desktop or phone
 
@@ -194,7 +216,8 @@ portfolio/
 │           ├── loading.ts       # tells the page when the cafe is ready to show
 │           ├── quality.ts       # lighter render on phones, WebGL check
 │           ├── scroll.ts        # scroll progress, 1/2 shortcuts
-│           ├── overlay/         # HTML on top of the scene (name, title)
+│           ├── overlay/         # HTML on top of the scene: name, title, the loading intro
+│           │                    # (Intro.tsx, drawn by introPaint.ts in introWorker.ts)
 │           ├── links.ts         # my profile links
 │           └── styles/
 ├── assets-src/                  # source files; CREDITS.md tracks licenses
@@ -240,11 +263,15 @@ Other scripts:
 - [x] Desktop UI: menu bar, dock, Finder, project windows, resizing, full screen
 - [ ] More macOS polish and animations
 - [x] Phone layout: phone on the table, Android-style home screen, apps and recents
-- [ ] Reduced-motion version
+- [x] Booth regulars: a woman in an ao trang, a doctor, and a T1 fan
+- [x] Performance pass: merged static meshes, trimmed shadows, shaders compiled up front
+- [x] Loading intro: my signature written in a worker, opening up onto the cafe
+- [x] Deploy on Vercel at jahyluu.dev
+- [ ] Reduced-motion version of the cafe (the intro already has one)
+- [ ] Fallback to the desktop or phone on slow machines
 - [ ] Final project descriptions, screenshots and links (drafts are in place)
+- [ ] Accessibility pass: keyboard and screen reader support on the desktop and phone
 - [ ] Backend: projects API, terminal, live metrics, guestbook, contact form
-- [ ] Performance and accessibility pass
-- [ ] Deploy with a custom domain
 
 ## Credits
 

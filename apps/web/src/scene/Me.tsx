@@ -356,7 +356,7 @@ const HAIRLINE: Hairline = [
   [Math.PI, -0.88], // nape
 ]
 
-// also used by Customer for anyone with my haircut
+// Customer uses this too ('mine' hair)
 export const HAIR = makeHairShell({
   skull: SKULL,
   hairline: HAIRLINE,
