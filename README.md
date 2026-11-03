@@ -174,7 +174,7 @@ portfolio/
 │       │   ├── stickers/        # logo images for the laptop easter eggs
 │       │   ├── wallpaper.webp   # desktop wallpaper (+ a small copy that loads first)
 │       │   ├── icon.svg         # tab icon, my signature (+ png versions for older browsers)
-│       │   ├── og.jpg           # link preview image, the opening shot of the cafe
+│       │   ├── og-cafe.jpg      # link preview image, the opening shot of the cafe
 │       │   └── resume.pdf
 │       └── src/
 │           ├── scene/
