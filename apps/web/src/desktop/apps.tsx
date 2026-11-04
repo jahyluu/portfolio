@@ -81,7 +81,7 @@ export function ProjectDetails({ item }: { item?: string }) {
       {project.summary.map((paragraph) => (
         <p key={paragraph}>{paragraph}</p>
       ))}
-      {(project.repo || project.live) && (
+      {(project.repo || project.live || project.paper) && (
         <div className="actions">
           {project.live && (
             <a className="button primary" href={project.live} target="_blank" rel="noreferrer">
@@ -91,6 +91,11 @@ export function ProjectDetails({ item }: { item?: string }) {
           {project.repo && (
             <a className="button" href={project.repo} target="_blank" rel="noreferrer">
               View code
+            </a>
+          )}
+          {project.paper && (
+            <a className="button" href={project.paper} target="_blank" rel="noreferrer">
+              Read the paper
             </a>
           )}
         </div>

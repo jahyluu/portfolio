@@ -1,4 +1,4 @@
-// desktop content. first drafts from my resume, rewrite before launch
+// desktop and phone content
 
 export const PROFILE = {
   name: 'Jahy Luu',
@@ -10,11 +10,11 @@ export const PROFILE = {
   resume: '/resume.pdf',
 }
 
-// TODO: write this properly
 export const BIO = [
   "I'm a software engineer in Houston. I graduated from the University of Houston with a B.S. in Computer Science in May 2026.",
-  "Right now I build a 3D robotics simulator for kids at Smart Kids University, in Three.js and WebGL. Before that I worked on backend and automation projects, and I tutored data structures and algorithms for three years.",
-  "Outside of work I play League, make fan art, and build things like this site.",
+  "I like engineering problems for the same reason I like chess: there's usually a straightforward answer and a better one, and finding the better one takes strategy. I'm most interested in backend and systems work, where an efficient design pays off every time it runs.",
+  "Right now I build a 3D robotics simulator for kids at Smart Kids University, along with the data behind its AI tutor. Before that I built cloud pipelines and automation tools, and I tutored data structures and algorithms for three years.",
+  "Outside of work I play League, chess and sports.",
 ]
 
 export const EXPERIENCE = [
@@ -26,7 +26,7 @@ export const EXPERIENCE = [
 
 export const STACK: { group: string; items: string[] }[] = [
   { group: 'Languages', items: ['Java', 'Python', 'TypeScript', 'JavaScript', 'C++', 'SQL', 'GLSL', 'HTML/CSS'] },
-  { group: 'Frameworks', items: ['Spring Boot', 'React', 'Node.js', 'Three.js', 'WebGL', 'Tailwind CSS', 'Selenium'] },
+  { group: 'Frameworks', items: ['Spring Boot', 'React', 'Node.js', 'Three.js', 'React Three Fiber', 'WebGL', 'Vite', 'Tailwind CSS', 'Selenium'] },
   { group: 'AI / ML', items: ['LangChain', 'Llama', 'Claude API', 'RAG (ChromaDB)', 'Scikit-learn', 'Pandas', 'NumPy'] },
   { group: 'Cloud & Data', items: ['AWS', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'RabbitMQ', 'Firebase'] },
   { group: 'DevOps & Testing', items: ['Git', 'Docker', 'GitHub Actions', 'Gradle', 'JUnit', 'JaCoCo', 'Postman'] },
@@ -42,43 +42,48 @@ export type Project = {
   summary: string[]
   repo?: string
   live?: string
+  paper?: string
 }
 
-// TODO: screenshots, repo links, longer write-ups
 export const PROJECTS: Project[] = [
   {
     id: 'hydrius',
     name: 'Project Hydrius',
-    tagline: 'Scalable multiplayer Minecraft network',
-    stack: ['Java', 'Spring Boot', 'RabbitMQ', 'Redis', 'JUnit'],
+    tagline: 'Multiplayer Minecraft network with custom gamemodes',
+    stack: ['Java', 'Spring Boot', 'RabbitMQ', 'Redis', 'REST APIs', 'JUnit'],
     color: '#5b8def',
     summary: [
-      'Multiplayer infrastructure built with one other developer. Spring Boot services and RabbitMQ keep events in sync across distributed Minecraft servers, with 99.9% uptime.',
-      'Four custom plugins run player economies, live leaderboards and competitive events for 200+ concurrent players. Gameplay state is cached in Redis so actions never hit the database directly.',
-      'A JUnit suite covers 90% of lines, including RabbitMQ event handling, cache consistency and failure paths.',
+      'A Minecraft network with custom gamemodes, built with one other developer and now retired. Spring Boot services and RabbitMQ keep events in sync across the servers, with 99.9% uptime.',
+      'The hard part was concurrency on a budget. Chat, the economy and leaderboard stats all had to stay in sync for 200+ players at once, and we were students paying for our own servers. Splitting that work into small microservices let each one scale on its own and kept hosting cheap.',
+      'I worked on all of the plugins with my teammate, including cross-server chat and private messaging. Gameplay state is cached in Redis so player actions never hit the database directly, and a JUnit suite covers 90% of lines, including event handling, cache consistency and failure paths.',
     ],
+    repo: 'https://github.com/Project-Hydrius',
   },
   {
     id: 'cafe',
     name: 'This Portfolio',
     tagline: 'A low-poly cafe on a rainy night',
-    stack: ['React', 'TypeScript', 'Three.js', 'React Three Fiber', 'GLSL'],
+    stack: ['TypeScript', 'React', 'Three.js', 'React Three Fiber', 'GLSL', 'Vite', 'Vercel'],
     color: '#c77dff',
     summary: [
-      'The room you just came from. Everything is built in code with React Three Fiber: the people, the furniture, the rain on the glass and the park outside.',
-      'The camera follows one spiral tied to scroll, so it moves smoothly in both directions and hands off to this desktop at the end.',
+      'The room you just came from. Everything is built in code with React Three Fiber: the people, the furniture, the rain on the glass and the park outside. The camera follows one spiral tied to scroll, so it moves smoothly in both directions and hands off to this desktop at the end.',
+      'Performance took the most work. Merging static meshes, trimming shadow casters and updating shadows every other frame cut draw calls by 58%, from 2,651 to 1,106 per frame.',
+      'The 3D scene loads lazily behind the signature intro, which cut the JavaScript needed to start by 86%. The intro is drawn in a Web Worker so it stays smooth while the cafe loads, and all 37 shaders compile before it opens, so the first scroll doesn\'t stutter.',
     ],
-    repo: 'https://github.com/jahyluu',
+    repo: 'https://github.com/jahyluu/portfolio',
   },
   {
     id: 'league-ml',
     name: 'League Match Predictor',
     tagline: 'Predicting match outcomes from 100k+ games',
-    stack: ['Python', 'Scikit-learn', 'Pandas', 'NumPy'],
+    stack: ['Python', 'Scikit-learn', 'XGBoost', 'Pandas', 'NumPy', 'Riot API'],
     color: '#4cc9a0',
     summary: [
-      'Gradient-boosted models trained on 100k+ League of Legends matches. Feature engineering and GridSearchCV got it to 58% accuracy against a 50% coin-flip baseline.',
+      'Built with Steven Vu. We pulled ranked matches from the Riot API and asked how well team composition alone can predict the winner, before a single minion spawns.',
+      'Our paper started with 10,000 matches and compared Random Forest, XGBoost and a small neural network. The best reached 53%, and our error analysis pointed at unusual team comps and champions that play more than one role.',
+      'After the paper we scaled the pipeline to 100k+ matches and reworked the features, which raised accuracy to 58% against a 50% coin-flip baseline.',
     ],
+    paper: '/league-paper.pdf',
   },
   {
     id: 'outreach',
@@ -87,7 +92,9 @@ export const PROJECTS: Project[] = [
     stack: ['Python', 'LangChain', 'ChromaDB', 'Streamlit', 'Groq'],
     color: '#f2a65a',
     summary: [
-      'A full-stack generative AI tool that writes personalized LinkedIn messages from search data, using ChromaDB and semantic embeddings for retrieval.',
+      'A generative AI app that writes personalized LinkedIn messages from search data, using ChromaDB and semantic embeddings for retrieval.',
     ],
+    live: 'https://linkedincolddmgenerator.streamlit.app/',
+    repo: 'https://github.com/jahyluu/Linkedin-DM-Generator-Public',
   },
 ]
